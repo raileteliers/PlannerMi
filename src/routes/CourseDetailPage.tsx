@@ -54,14 +54,14 @@ function DetalleRamo({ ramo }: { ramo: Ramo }) {
       <CampoTexto
         value={ramo.nombre}
         onSave={(nombre) => void updateRamo(ramo.id, { nombre })}
-        className="w-full text-title font-bold outline-none"
+        className="min-h-[44px] w-full text-title font-bold outline-none"
         aria-label="Nombre del ramo"
       />
       <CampoTexto
         value={ramo.sigla ?? ''}
         placeholder="Sigla"
         onSave={(sigla) => void updateRamo(ramo.id, { sigla: sigla || undefined })}
-        className="w-full text-meta text-ink-secondary outline-none placeholder:text-ink-tertiary"
+        className="min-h-[44px] w-full text-meta text-ink-secondary outline-none placeholder:text-ink-tertiary"
         aria-label="Sigla del ramo"
       />
 

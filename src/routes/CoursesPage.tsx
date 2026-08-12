@@ -149,9 +149,10 @@ function NuevoRamoRow({
     if (!creado) setNombre(limpio)
   }
 
+  // Input above, colors below: six 44px targets and a name field cannot share
+  // one row on a 390px screen without one of them losing.
   return (
-    <div className="flex min-h-[56px] items-center gap-3 border-b border-border-hairline">
-      <ColorPicker value={colorElegido} onChange={setColor} />
+    <div className="flex flex-col border-b border-border-hairline">
       <input
         ref={inputRef}
         value={nombre}
@@ -169,6 +170,7 @@ function NuevoRamoRow({
         aria-label="Nombre del nuevo ramo"
         className="min-h-[44px] min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-ink-tertiary"
       />
+      <ColorPicker value={colorElegido} onChange={setColor} />
     </div>
   )
 }

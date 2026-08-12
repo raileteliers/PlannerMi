@@ -20,7 +20,7 @@ export function ColorPicker({
           aria-checked={color === value}
           aria-label={color}
           onClick={() => onChange(color)}
-          className="flex h-11 w-9 items-center justify-center"
+          className="flex h-11 w-11 items-center justify-center"
         >
           <span
             className="block rounded-full"

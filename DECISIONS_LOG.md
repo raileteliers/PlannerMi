@@ -164,3 +164,18 @@ with the reason.
   lookup, not from concatenating "Nueva " with the entity name.
 - **A tarea can hang off one of the next 8 upcoming evaluaciones**, shown as chips with
   their ramo color, instead of a long select of everything ever created.
+
+## Phase 6 — States and polish
+
+- **No screen renders until the database has answered.** While `status === 'starting'`
+  the shell shows with blank content — not a spinner, and not a screen drawn against an
+  empty dataset, which is what made Ramos claim "todavía no tenés ramos" to someone with
+  four ramos for the first ~50ms of every launch.
+- **The failed-write toast is a button.** It dismisses on tap and after 4 seconds, sits
+  above the bottom bar, and carries the neutral accent — a red toast would spend the one
+  color that means importance.
+- **The blocking error screen offers export only when something was read** before the
+  failure. A button that exports nothing would be a cruel button.
+- **Six 44px color targets and a name field do not fit one row** at 390px, so the new-ramo
+  row stacks: name on top, colors below. The dots went from 36px to 44px.
+- **Verified there are no spinners** and no loading text anywhere in `src`.

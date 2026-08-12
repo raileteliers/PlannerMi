@@ -4,6 +4,7 @@ import { usePlannerStore } from '../store/usePlannerStore'
 import { useStartDatabase } from './useStartDatabase'
 import { DatabaseErrorScreen } from './DatabaseErrorScreen'
 import { CreateFab } from '../features/create/CreateFab'
+import { Toast } from '../components/Toast'
 
 const TAB_CLASS =
   'flex min-h-[44px] flex-1 items-center justify-center text-meta'
@@ -23,6 +24,7 @@ function Tab({ to, label, active }: { to: string; label: string; active: boolean
 export function AppShell() {
   const { pathname } = useLocation()
   const fatalError = usePlannerStore((s) => s.fatalError)
+  const status = usePlannerStore((s) => s.status)
   useStartDatabase()
 
   if (fatalError) return <DatabaseErrorScreen message={fatalError} />
@@ -41,9 +43,19 @@ export function AppShell() {
       </header>
 
       <main className="relative min-h-0 flex-1 overflow-hidden">
-        <Outlet />
-        {/* Not on Ajustes: there is nothing to add in there. */}
-        {!pathname.startsWith('/ajustes') && !pathname.startsWith('/paleta') && <CreateFab />}
+        {/* No spinner: the shell shows and the content stays blank while the
+            database opens. Rendering a screen against an empty dataset would
+            claim "todavía no tenés ramos" to someone who has four. */}
+        {status !== 'starting' && (
+          <>
+            <Outlet />
+            {/* Not on Ajustes: there is nothing to add in there. */}
+            {!pathname.startsWith('/ajustes') && !pathname.startsWith('/paleta') && (
+              <CreateFab />
+            )}
+          </>
+        )}
+        <Toast />
       </main>
 
       <nav className="flex shrink-0 border-t border-border-hairline pb-[env(safe-area-inset-bottom)]">
