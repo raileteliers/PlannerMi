@@ -45,7 +45,8 @@ export function DayTimeline({
 
   return (
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-      <div className="relative" style={{ height: SLOTS * SLOT_PX }}>
+      {/* Extra height at the end so the last hour clears the floating FAB. */}
+      <div className="relative" style={{ height: SLOTS * SLOT_PX + 56 }}>
         {Array.from({ length: SLOTS }, (_, i) => {
           const inicioMin = TIMELINE_INICIO_MIN + i * SLOT_MIN
           const enHora = inicioMin % 60 === 0

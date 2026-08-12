@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { addDays, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useNavigate, useParams } from 'react-router'
@@ -14,6 +14,7 @@ import {
 } from '../logic/dayTimeline'
 import { parseISODate, toISODate, todayISO, type ISODate } from '../lib/date'
 import { usePlannerStore } from '../store/usePlannerStore'
+import { useUiStore } from '../store/useUiStore'
 
 const SWIPE_MIN_PX = 50
 
@@ -23,6 +24,9 @@ export function DayPage() {
   const data = usePlannerStore((s) => s.data)
   const navigate = useNavigate()
   const [borrador, setBorrador] = useState<BloqueBorrador | null>(null)
+
+  const setFechaContexto = useUiStore((s) => s.setFechaContexto)
+  useEffect(() => setFechaContexto(fecha), [fecha, setFechaContexto])
 
   const entradas = entradasDelTimeline(data, fecha)
   const franja = franjaSuperior(data, fecha)

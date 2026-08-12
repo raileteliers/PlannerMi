@@ -1,8 +1,10 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { COURSE_COLORS, courseColorVar, type ColorToken } from '../design/palette'
 import { ColorPicker } from '../components/ColorPicker'
 import { usePlannerStore } from '../store/usePlannerStore'
+import { useUiStore } from '../store/useUiStore'
+import { todayISO } from '../lib/date'
 import {
   pendientesDeRamo,
   ramosActivos,
@@ -21,6 +23,9 @@ export function CoursesPage() {
   const activos = ramosActivos(data)
   const archivados = ramosArchivados(data)
   const nombreRef = useRef<HTMLInputElement>(null)
+  // No date context on this screen: the "+" means today.
+  const setFechaContexto = useUiStore((s) => s.setFechaContexto)
+  useEffect(() => setFechaContexto(todayISO()), [setFechaContexto])
   const [creando, setCreando] = useState(false)
 
   if (data.ramos.length === 0 && !creando) {
@@ -30,7 +35,7 @@ export function CoursesPage() {
   // One layout from here on: saving the first ramo must not swap the input
   // out from under the cursor, or the next name is typed into nothing.
   return (
-    <div className="h-full overflow-y-auto px-4 pb-8">
+    <div className="h-full overflow-y-auto px-4 pb-20">
       <h1 className="py-3 text-title font-bold">Ramos</h1>
 
       <ul>

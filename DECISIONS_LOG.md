@@ -137,3 +137,30 @@ with the reason.
   turns gray on its own.
 - **A new block never spills past 23:00** — the last slot proposes 22:30-23:00 — and any
   entry outside the timeline is clipped rather than drawn beyond it.
+
+## Phase 5 — Global creation and Ajustes
+
+- **The context date lives in a tiny separate store** (`useUiStore`), set by each screen:
+  the day you tapped in the month, the day you are organizing, today on Ramos. The FAB
+  reads it, so it never has to know which screen it is floating over.
+- **The FAB gets its own lane.** Floating it over the month grid covered the last week's
+  Sunday, which is a real day you can no longer tap. The month reserves 56px at the
+  bottom and the timeline adds the same at the end, so nothing lives under it.
+- **The FAB is hidden on Ajustes and the palette screen** — there is nothing to create
+  there.
+- **Editing an evaluación, compromiso or tarea happens from the day sheet**, replacing
+  the list inside the same sheet rather than stacking a second one: only one thing floats
+  at a time. Ramos already edits evaluaciones and tareas; this is the only place a
+  compromiso can be edited at all, which is why it is here.
+- **Cancelling one occurrence is offered when the form is opened from a specific day**
+  ("Cancelar solo el vie 14 ago") and appends to `Recurrencia.excepciones`. Deleting the
+  compromiso itself is relabelled "Eliminar toda la serie" so the two are not confused.
+  `DESIGN.md` allows cancelling an occurrence and forbids moving one; this is the
+  cancelling half.
+- **Import shows the counts before replacing anything** and needs an explicit confirm,
+  because it destroys what is there. A rejected file lists every reason and writes
+  nothing.
+- **Titles carry gender by hand** (`Nuevo compromiso`, `Nueva evaluación`): built from a
+  lookup, not from concatenating "Nueva " with the entity name.
+- **A tarea can hang off one of the next 8 upcoming evaluaciones**, shown as chips with
+  their ramo color, instead of a long select of everything ever created.

@@ -7,27 +7,8 @@ import { formatFechaCorta, formatFechaEditable, parseFechaCorta } from '../lib/d
 import { usePlannerStore } from '../store/usePlannerStore'
 import { evaluacionesDeRamo, ramoById, tareasDeEvaluacion } from '../store/selectors'
 import type { DeletePlan } from '../logic/cascade'
-import {
-  IMPORTANCIAS,
-  TIPOS_EVALUACION,
-  type Evaluacion,
-  type Importancia,
-  type Ramo,
-  type TipoEvaluacion,
-} from '../model/types'
-
-const TIPO_LABEL: Record<TipoEvaluacion, string> = {
-  prueba: 'Prueba',
-  control: 'Control',
-  entrega: 'Entrega',
-  examen: 'Examen',
-}
-
-const IMPORTANCIA_LABEL: Record<Importancia, string> = {
-  alta: 'Alta',
-  media: 'Media',
-  baja: 'Baja',
-}
+import { IMPORTANCIAS, TIPOS_EVALUACION, type Evaluacion, type Ramo } from '../model/types'
+import { IMPORTANCIA_LABEL, TIPO_LABEL } from '../design/labels'
 
 export function CourseDetailPage() {
   const { id = '' } = useParams()
@@ -65,7 +46,7 @@ function DetalleRamo({ ramo }: { ramo: Ramo }) {
   }
 
   return (
-    <div className="h-full overflow-y-auto px-4 pb-10">
+    <div className="h-full overflow-y-auto px-4 pb-20">
       <Link to="/ramos" className="flex min-h-[44px] items-center text-meta text-ink-secondary">
         ← Ramos
       </Link>

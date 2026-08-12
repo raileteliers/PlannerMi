@@ -3,6 +3,7 @@ import { todayISO } from '../lib/date'
 import { usePlannerStore } from '../store/usePlannerStore'
 import { useStartDatabase } from './useStartDatabase'
 import { DatabaseErrorScreen } from './DatabaseErrorScreen'
+import { CreateFab } from '../features/create/CreateFab'
 
 const TAB_CLASS =
   'flex min-h-[44px] flex-1 items-center justify-center text-meta'
@@ -39,8 +40,10 @@ export function AppShell() {
         </NavLink>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-hidden">
+      <main className="relative min-h-0 flex-1 overflow-hidden">
         <Outlet />
+        {/* Not on Ajustes: there is nothing to add in there. */}
+        {!pathname.startsWith('/ajustes') && !pathname.startsWith('/paleta') && <CreateFab />}
       </main>
 
       <nav className="flex shrink-0 border-t border-border-hairline pb-[env(safe-area-inset-bottom)]">
