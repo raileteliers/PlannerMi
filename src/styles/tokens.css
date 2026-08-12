@@ -1,0 +1,48 @@
+/*
+ * Design tokens. Single source of truth for every color in the app.
+ *
+ * The app is gray: surfaces, borders and text are neutral. Color only ever
+ * carries data (month bars, course/category chips) or importance (red).
+ * A dark theme later means redefining these values, nothing else.
+ */
+
+:root {
+  /* --- Neutrals ------------------------------------------------------- */
+  --pm-surface: #ffffff;
+  --pm-surface-raised: #ffffff; /* sheets and FAB: same paper, lifted by shadow */
+  --pm-surface-muted: #f5f5f5; /* today's cell, pressed rows */
+  --pm-border: #e5e5e5; /* month grid, hour lines */
+  --pm-border-strong: #d4d4d4; /* inputs */
+  --pm-text: #171717;
+  --pm-text-secondary: #737373; /* metadata, day numbers */
+  --pm-text-tertiary: #a3a3a3; /* placeholders, days outside the month */
+  --pm-accent: #171717; /* FAB, active tab: neutral on purpose */
+  --pm-on-accent: #ffffff;
+
+  /* --- Importance ------------------------------------------------------ */
+  /* Red means one thing only: high importance. Vetoed as a data color. */
+  --pm-importance-high: #dc2626;
+
+  /* --- Course palette (closed set, red-free) --------------------------- */
+  /* All >= 5:1 against white and >= 34 CIE76 apart, so a 4px bar reads. */
+  --pm-course-blue: #2563eb;
+  --pm-course-teal: #0f766e;
+  --pm-course-green: #15803d;
+  --pm-course-amber: #b45309;
+  --pm-course-violet: #7c3aed;
+  --pm-course-magenta: #be185d;
+
+  /* --- Commitment categories (fixed) ----------------------------------- */
+  --pm-category-deporte: var(--pm-course-blue);
+  --pm-category-salud: var(--pm-course-green);
+  --pm-category-tramite: var(--pm-course-amber);
+  --pm-category-personal: var(--pm-course-violet);
+
+  /* Recurring items keep their hue but drop in weight. */
+  --pm-recurring-alpha: 0.35;
+
+  /* --- Shape ----------------------------------------------------------- */
+  --pm-radius-card: 8px;
+  --pm-radius-bar: 2px;
+  --pm-shadow-float: 0 4px 16px rgb(0 0 0 / 0.12);
+}

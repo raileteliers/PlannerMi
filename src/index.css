@@ -1,0 +1,69 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+/* Map the tokens into Tailwind's theme so utilities like `bg-surface`,
+   `text-secondary` or `bg-course-blue` come straight from tokens.css. */
+@theme {
+  --color-surface: var(--pm-surface);
+  --color-surface-raised: var(--pm-surface-raised);
+  --color-surface-muted: var(--pm-surface-muted);
+  --color-border-hairline: var(--pm-border);
+  --color-border-strong: var(--pm-border-strong);
+  --color-ink: var(--pm-text);
+  --color-ink-secondary: var(--pm-text-secondary);
+  --color-ink-tertiary: var(--pm-text-tertiary);
+  --color-accent: var(--pm-accent);
+  --color-on-accent: var(--pm-on-accent);
+  --color-importance: var(--pm-importance-high);
+
+  --color-course-blue: var(--pm-course-blue);
+  --color-course-teal: var(--pm-course-teal);
+  --color-course-green: var(--pm-course-green);
+  --color-course-amber: var(--pm-course-amber);
+  --color-course-violet: var(--pm-course-violet);
+  --color-course-magenta: var(--pm-course-magenta);
+
+  --color-category-deporte: var(--pm-category-deporte);
+  --color-category-salud: var(--pm-category-salud);
+  --color-category-tramite: var(--pm-category-tramite);
+  --color-category-personal: var(--pm-category-personal);
+
+  /* Three sizes, no more: screen titles, content, metadata. */
+  --text-title: 20px;
+  --text-title--line-height: 26px;
+  --text-body: 15px;
+  --text-body--line-height: 20px;
+  --text-meta: 12px;
+  --text-meta--line-height: 16px;
+
+  --radius-card: var(--pm-radius-card);
+  --radius-bar: var(--pm-radius-bar);
+
+  --shadow-float: var(--pm-shadow-float);
+
+  --font-sans:
+    'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--pm-surface);
+  color: var(--pm-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+  /* The month grid must fit without vertical scroll; nothing bounces. */
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
