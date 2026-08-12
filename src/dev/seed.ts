@@ -121,19 +121,19 @@ export function installDevTools(): void {
   const api = {
     seed: async (hoy?: string) => {
       const datos = buildSeedDataset(hoy ? new Date(hoy) : new Date())
-      const ok = await store.getState().reemplazarTodo(datos)
+      const ok = await store.getState().replaceAll(datos)
       console.log(ok ? '[plannermi] seed cargado' : '[plannermi] no se pudo cargar el seed')
       return ok
     },
-    limpiar: async () => {
-      const ok = await store.getState().reemplazarTodo(emptyDataset())
+    clear: async () => {
+      const ok = await store.getState().replaceAll(emptyDataset())
       console.log(ok ? '[plannermi] base vacía' : '[plannermi] no se pudo vaciar la base')
       return ok
     },
-    datos: () => store.getState().datos,
-    exportar: () => store.getState().exportar(),
+    data: () => store.getState().data,
+    exportFile: () => store.getState().buildExportFile(),
     store,
   }
   Object.assign(window, { plannermi: api })
-  console.log('[plannermi] dev tools: plannermi.seed() · plannermi.limpiar() · plannermi.datos()')
+  console.log('[plannermi] dev tools: plannermi.seed() · plannermi.clear() · plannermi.data()')
 }

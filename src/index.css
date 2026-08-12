@@ -45,25 +45,24 @@
     'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
+/* Layered on purpose: unlayered rules outrank every Tailwind utility, so a
+   bare `button { color: inherit }` here would silently beat `text-*`. */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
 
-body {
-  margin: 0;
-  background: var(--pm-surface);
-  color: var(--pm-text);
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-  line-height: 20px;
-  -webkit-font-smoothing: antialiased;
-  /* The month grid must fit without vertical scroll; nothing bounces. */
-  overscroll-behavior: none;
-}
-
-button {
-  font: inherit;
-  color: inherit;
+  body {
+    margin: 0;
+    background: var(--pm-surface);
+    color: var(--pm-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+    /* The month grid must fit without vertical scroll; nothing bounces. */
+    overscroll-behavior: none;
+  }
 }

@@ -2,12 +2,12 @@ import { useEffect } from 'react'
 import { usePlannerStore } from '../store/usePlannerStore'
 
 /** StrictMode mounts twice in dev; the database is opened once. */
-let iniciado = false
+let started = false
 
-export function useIniciarBase(): void {
+export function useStartDatabase(): void {
   useEffect(() => {
-    if (iniciado) return
-    iniciado = true
-    void usePlannerStore.getState().iniciar()
+    if (started) return
+    started = true
+    void usePlannerStore.getState().start()
   }, [])
 }

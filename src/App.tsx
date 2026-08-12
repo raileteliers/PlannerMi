@@ -3,6 +3,7 @@ import { AppShell } from './app/AppShell'
 import { MonthPage } from './routes/MonthPage'
 import { DayPage } from './routes/DayPage'
 import { CoursesPage } from './routes/CoursesPage'
+import { CourseDetailPage } from './routes/CourseDetailPage'
 import { SettingsPage } from './routes/SettingsPage'
 import { PalettePage } from './routes/PalettePage'
 import { todayISO } from './lib/date'
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="dia" element={<Navigate to={`/dia/${todayISO()}`} replace />} />
           <Route path="dia/:fecha" element={<DayPage />} />
           <Route path="ramos" element={<CoursesPage />} />
+          <Route path="ramos/:id" element={<CourseDetailPage />} />
           <Route path="ajustes" element={<SettingsPage />} />
           <Route path="paleta" element={<PalettePage />} />
           <Route path="*" element={<Navigate to="/mes" replace />} />

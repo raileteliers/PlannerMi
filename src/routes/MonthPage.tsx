@@ -6,13 +6,13 @@ export function MonthPage() {
 
 /** Phase 1: routes exist, screens do not. Removed as each phase lands. */
 export function PlaceholderScreen({ title }: { title: string }) {
-  const datos = usePlannerStore((s) => s.datos)
-  const estado = usePlannerStore((s) => s.estado)
+  const datos = usePlannerStore((s) => s.data)
+  const estado = usePlannerStore((s) => s.status)
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2">
       <p className="text-meta text-ink-tertiary">{title}</p>
-      {import.meta.env.DEV && estado === 'listo' && (
+      {import.meta.env.DEV && estado === 'ready' && (
         <p className="text-meta text-ink-tertiary">
           {datos.ramos.length} ramos · {datos.evaluaciones.length} evaluaciones ·{' '}
           {datos.compromisos.length} compromisos · {datos.tareas.length} tareas ·{' '}

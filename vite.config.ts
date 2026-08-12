@@ -37,7 +37,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: 'index.html',
       },
-      devOptions: { enabled: true, type: 'module' },
+      // Off in dev: the precaching service worker serves stale CSS and JS
+      // through every edit. Installability is checked on `npm run preview`.
+      devOptions: { enabled: false },
     }),
   ],
   test: {

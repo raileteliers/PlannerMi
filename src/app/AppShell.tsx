@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { todayISO } from '../lib/date'
 import { usePlannerStore } from '../store/usePlannerStore'
-import { useIniciarBase } from './useIniciarBase'
+import { useStartDatabase } from './useStartDatabase'
 import { DatabaseErrorScreen } from './DatabaseErrorScreen'
 
 const TAB_CLASS =
@@ -21,10 +21,10 @@ function Tab({ to, label, active }: { to: string; label: string; active: boolean
 /** Header + bottom tabs. Rendered immediately at startup, content fills in. */
 export function AppShell() {
   const { pathname } = useLocation()
-  const errorFatal = usePlannerStore((s) => s.errorFatal)
-  useIniciarBase()
+  const fatalError = usePlannerStore((s) => s.fatalError)
+  useStartDatabase()
 
-  if (errorFatal) return <DatabaseErrorScreen mensaje={errorFatal} />
+  if (fatalError) return <DatabaseErrorScreen message={fatalError} />
 
   return (
     <div className="flex h-full flex-col bg-surface">

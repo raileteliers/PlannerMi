@@ -55,5 +55,38 @@ with the reason.
   (verified: `persisted() === false` there) and grants it by engagement heuristics once
   installed. A refusal is not something the user can act on, so it is never surfaced.
 - **Dev fixture lives in `src/dev/seed.ts`**, exposed as `window.plannermi` in dev builds
-  only (`plannermi.seed()`, `.limpiar()`, `.datos()`, `.exportar()`). Its dates are
+  only (`plannermi.seed()`, `.clear()`, `.data()`, `.exportFile()`). Its dates are
   relative to today so the month view always has content.
+- **The service worker is disabled in dev** (`devOptions.enabled: false`). Its precache
+  served stale CSS and JS through every edit, which cost an hour of chasing a styling
+  bug that was not there. Installability is verified on `npm run preview`.
+
+## Phase 2 — Ramos screen
+
+- **Dates are typed, not picked.** A native `<input type="date">` costs three taps per
+  evaluación on Android; the field takes `12/9` (also `12-9`, `12.9`, `12/9/27`) and
+  refuses what it cannot parse. With no year typed, it assumes the current one unless
+  the date is more than three months past, which means next year — that is loading
+  March in December, not a typo.
+- **Enter chains the fields**: Enter on the title jumps to the date, Enter on the date
+  saves and returns to the title. Loading a semester is one uninterrupted run: one tap
+  to start, then keyboard only.
+- **Inline rows clear their fields before awaiting the write.** At typing speed the next
+  name starts arriving while IndexedDB is still busy, and it landed on top of the
+  previous one ("Física GeneralProgramación"). On a failed write the text is put back.
+- **The new-evaluación row keeps its values in a ref, not only in state.** Enter saves
+  and moves focus, which fires the date field's blur in the same tick, before React has
+  re-rendered — every evaluación was created twice. The ref is emptied synchronously so
+  the second call finds nothing to save.
+- **The empty state and the list share one layout.** Rendering a separate "no ramos"
+  screen unmounted the input the moment the first ramo was saved, and the next name was
+  typed into nothing.
+- **Ramos are sorted alphabetically and tareas by pending-then-title.** IndexedDB
+  returns records in primary-key order and the keys are UUIDs, so without a sort the
+  lists reshuffle on every reload.
+- **New ramos take the next unused color** from the palette, so four ramos in a row are
+  never the same color. Tapping a dot overrides it.
+- **Blur inside the same row does not save.** Tapping a color dot blurs the name field;
+  saving there would create a ramo with a half-typed name.
+- **Deleting is offered under archiving, and only the delete is red.** The confirmation
+  carries the plan's real counts and also says how many bloques survive unlinked.
