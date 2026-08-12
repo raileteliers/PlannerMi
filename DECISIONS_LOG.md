@@ -198,3 +198,19 @@ with the reason.
   evaluaciones nobody marked, and red is the one channel that has to stay expensive.
 - **The row reserves 56px on its right** so the ↵ never shares a spot with the floating
   FAB, where the wrong button would win the tap.
+
+## After phase 6 — bar thickness, on request
+
+- **Bar thickness carries importance and crowding.** Base heights are alta 6px, media 4px,
+  baja 3px, multiplied by 1 / 1 / 0.85 / 0.7 for 1-4 items that day and clamped to whole
+  pixels between 2 and 6. Below 2px a bar stops being a bar; above 6px the cell starts
+  looking like a chart. The gap between bars tightens the same way, 4px down to 2px.
+- **This is importance in two channels** — the red day number and now thickness — which
+  `DESIGN.md` §3.1 deliberately kept separate. They answer different questions, though:
+  red says "something today matters", thickness says *which* of the three things in that
+  cell it is. Worth revisiting after a month of real use; if it reads as noise, deleting
+  `alturaBarraPx` and going back to a flat 4px is a one-line change.
+- **Crowding shrinks instead of growing.** A loaded day could have used taller bars, but
+  the cell height is fixed by the no-scroll rule, so density had to come from finer marks.
+- **The palette screen documents the scale** at 1, 2, 3 and 4 items per day, since it is
+  the one place the visual language can be checked at real size.

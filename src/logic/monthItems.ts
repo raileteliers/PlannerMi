@@ -1,10 +1,41 @@
 import { CATEGORY_COLOR } from '../design/palette'
 import type { ISODate } from '../lib/date'
-import type { Dataset, DatedItem, Evaluacion, Ramo, Tarea } from '../model/types'
+import type {
+  Dataset,
+  DatedItem,
+  Evaluacion,
+  Importancia,
+  Ramo,
+  Tarea,
+} from '../model/types'
 import { expandCompromiso, type DateRange } from './recurrence'
 
 /** The grid never shows more than this many bars in one cell. */
 export const MAX_BARRAS = 4
+
+/**
+ * How thick a bar is drawn. Two inputs, both of them information:
+ *
+ * - importancia gives the bar its weight, so in a day holding three things
+ *   you can see which one is the one that matters;
+ * - how crowded the day is shrinks everything together, so a loaded day reads
+ *   as denser and finer rather than as a cell that outgrew itself.
+ *
+ * Kept to whole pixels between 2 and 6: below 2 a bar stops being a bar, and
+ * above 6 the cell starts looking like a chart.
+ */
+const ALTURA_BASE_PX: Record<Importancia, number> = { alta: 6, media: 4, baja: 3 }
+
+const APRIETE = [1, 1, 0.85, 0.7] as const
+
+export function alturaBarraPx(importancia: Importancia, itemsEseDia: number): number {
+  const factor = APRIETE[Math.min(Math.max(itemsEseDia, 1), MAX_BARRAS) - 1] ?? 0.7
+  return Math.max(2, Math.min(6, Math.round(ALTURA_BASE_PX[importancia] * factor)))
+}
+
+/** The gap between bars tightens with the same crowding. */
+export const separacionBarrasPx = (itemsEseDia: number): number =>
+  itemsEseDia >= MAX_BARRAS ? 2 : itemsEseDia === 3 ? 3 : 4
 
 /**
  * Everything the month grid needs, flattened into one shape. The grid does

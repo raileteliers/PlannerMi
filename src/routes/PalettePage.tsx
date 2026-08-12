@@ -6,6 +6,7 @@ import {
   type CategoriaCompromiso,
   type ColorToken,
 } from '../design/palette'
+import { alturaBarraPx } from '../logic/monthItems'
 
 /**
  * Review screen for the design tokens. Not part of the product surface:
@@ -43,6 +44,31 @@ export function PalettePage() {
         </div>
         <p className="mt-2 text-meta text-ink-secondary">
           Sólido = ítem único. Tenue = ocurrencia recurrente.
+        </p>
+      </Section>
+
+      <Section title="Grosor: importancia y qué tan cargado está el día">
+        <div className="flex gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="flex-1">
+              <span className="text-meta text-ink-tertiary">{n} en el día</span>
+              <div className="mt-1 rounded-card border border-border-hairline p-1">
+                {(['alta', 'media', 'baja'] as const).slice(0, Math.min(n, 3)).map((imp) => (
+                  <span
+                    key={imp}
+                    className="mb-1 block rounded-bar"
+                    style={{
+                      height: alturaBarraPx(imp, n),
+                      background: courseColorVar('blue'),
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-2 text-meta text-ink-secondary">
+          Más importante, más grueso. Día más cargado, todo más fino.
         </p>
       </Section>
 

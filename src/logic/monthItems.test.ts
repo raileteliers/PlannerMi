@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  alturaBarraPx,
   datedItemsEnRango,
   itemsPorFecha,
+  separacionBarrasPx,
   tareasDelDia,
   tieneImportanciaAlta,
 } from './monthItems'
@@ -153,6 +155,49 @@ describe('tieneImportanciaAlta', () => {
     const porFecha = itemsPorFecha(fixture(), marzo)
     expect(tieneImportanciaAlta(porFecha.get('2026-03-10') ?? [])).toBe(true)
     expect(tieneImportanciaAlta(porFecha.get('2026-03-02') ?? [])).toBe(false)
+  })
+})
+
+describe('alturaBarraPx', () => {
+  it('gives a high-importance bar more weight than the rest', () => {
+    expect(alturaBarraPx('alta', 1)).toBeGreaterThan(alturaBarraPx('media', 1))
+    expect(alturaBarraPx('media', 1)).toBeGreaterThan(alturaBarraPx('baja', 1))
+  })
+
+  it('keeps the ranking on a crowded day', () => {
+    expect(alturaBarraPx('alta', 4)).toBeGreaterThan(alturaBarraPx('baja', 4))
+  })
+
+  it('thins everything down as the day fills up', () => {
+    expect(alturaBarraPx('alta', 4)).toBeLessThan(alturaBarraPx('alta', 1))
+    expect(alturaBarraPx('alta', 2)).toBe(alturaBarraPx('alta', 1)) // two is not crowded
+  })
+
+  it('never draws something too thin to be a bar or thick enough to be a chart', () => {
+    const importancias = ['alta', 'media', 'baja'] as const
+    for (const importancia of importancias) {
+      for (let n = 0; n <= 8; n++) {
+        const alto = alturaBarraPx(importancia, n)
+        expect(alto).toBeGreaterThanOrEqual(2)
+        expect(alto).toBeLessThanOrEqual(6)
+        expect(Number.isInteger(alto)).toBe(true)
+      }
+    }
+  })
+
+  it('treats counts beyond the cap like a full day', () => {
+    expect(alturaBarraPx('media', 9)).toBe(alturaBarraPx('media', 4))
+  })
+
+  it('fits four bars and their gaps in a cell', () => {
+    const alto = 4 * alturaBarraPx('alta', 4) + 3 * separacionBarrasPx(4)
+    expect(alto).toBeLessThan(40) // the cell has ~60px under the day number
+  })
+})
+
+describe('separacionBarrasPx', () => {
+  it('tightens with the same crowding', () => {
+    expect(separacionBarrasPx(4)).toBeLessThan(separacionBarrasPx(1))
   })
 })
 

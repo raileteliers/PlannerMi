@@ -2,7 +2,12 @@ import { isSameMonth } from 'date-fns'
 import { courseColorVar } from '../../design/palette'
 import { toISODate, type ISODate } from '../../lib/date'
 import type { DatedItem } from '../../model/types'
-import { MAX_BARRAS, tieneImportanciaAlta } from '../../logic/monthItems'
+import {
+  MAX_BARRAS,
+  alturaBarraPx,
+  separacionBarrasPx,
+  tieneImportanciaAlta,
+} from '../../logic/monthItems'
 
 /** Monday first, the way a Chilean calendar reads. */
 const WEEKDAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
@@ -83,6 +88,7 @@ function DayCell({
 }) {
   // Red is the day number and nothing else: never a bar, never a border.
   const alta = tieneImportanciaAlta(items)
+  const visibles = items.slice(0, MAX_BARRAS)
 
   return (
     <button
@@ -105,12 +111,18 @@ function DayCell({
         {numero}
       </span>
 
-      <span className="mt-1 flex min-h-0 flex-col gap-1">
-        {items.slice(0, MAX_BARRAS).map((item) => (
+      {/* Thickness carries importance, and the whole stack thins as the day
+          fills up: a loaded day reads as denser, not as a taller cell. */}
+      <span
+        className="mt-1 flex min-h-0 flex-col"
+        style={{ gap: separacionBarrasPx(visibles.length) }}
+      >
+        {visibles.map((item) => (
           <span
             key={item.id}
-            className="block h-[4px] shrink-0 rounded-bar"
+            className="block shrink-0 rounded-bar"
             style={{
+              height: alturaBarraPx(item.importancia, visibles.length),
               background: courseColorVar(item.color),
               // Reduced weight, not hidden: routine still takes up your day.
               opacity: item.esRecurrente ? 'var(--pm-recurring-alpha)' : delMes ? 1 : 0.5,
