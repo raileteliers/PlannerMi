@@ -90,3 +90,24 @@ with the reason.
   saving there would create a ramo with a half-typed name.
 - **Deleting is offered under archiving, and only the delete is red.** The confirmation
   carries the plan's real counts and also says how many bloques survive unlinked.
+
+## Phase 3 — Month view
+
+- **The grid fits by construction**, not by measurement: the rows are
+  `repeat(n, minmax(0, 1fr))` inside a flex column, so a 5-week February and a 6-week
+  March both fill the same height without scrolling.
+- **Weeks start on Monday**, the way a Chilean calendar reads. `Recurrencia.diasSemana`
+  stays 0-6 Sunday-first as `DESIGN.md` defines it; only the display differs.
+- **Leading and trailing days show their bars**, dimmed to 50%, with the day number in
+  the tertiary gray. Hiding them made the last row look like an empty week when it
+  wasn't.
+- **When a day has more than four items, the routine ones fall off.** Bars are ordered
+  evaluaciones → one-off commitments → recurring, so the four that survive are always
+  the most exceptional. Nothing is actually lost: the day sheet lists everything.
+- **The day sheet is built from the entities, not from `DatedItem`** — it needs the ramo
+  name, the hour and the type, which the grid's normalized shape deliberately drops.
+- **The visible month is component state, not a route param.** Leaving the tab and
+  coming back returns to the current month, which is the common case; deep-linking a
+  specific month has no user in the MVP.
+- **Swipe threshold is 50px horizontal and must exceed the vertical delta**, so
+  scrolling a sheet or tapping a cell never changes month by accident.
