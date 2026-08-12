@@ -111,3 +111,29 @@ with the reason.
   specific month has no user in the MVP.
 - **Swipe threshold is 50px horizontal and must exceed the vertical delta**, so
   scrolling a sheet or tapping a cell never changes month by accident.
+
+## Phase 4 — Day view
+
+- **Times are typed like dates**: the block sheet takes `19`, `19:30`, `1930`, `9.30`.
+  Same reason as `parseFechaCorta` — a native time picker costs taps.
+- **"Agendar" suggests 18:00**, or the first free half-hour after it, falling back to the
+  first gap in the day. It has to land somewhere, and the evening is where study blocks
+  go; the sheet is open with the hour editable before anything is saved.
+- **A slot is 44px** (the minimum touch target), so the timeline scrolls — only the
+  month is required to fit. It opens scrolled to the current hour, or to 08:00 on
+  another day, and does not re-scroll afterwards.
+- **Overlapping entries share the width in columns** instead of hiding each other.
+  Entries that overlap transitively form one group and all get the same column count, so
+  the edges line up.
+- **The top strip holds tareas dated that day**, not every pending task. `DESIGN.md`
+  says "tareas pendientes"; the undated backlog would flood the strip and has no reason
+  to belong to this particular day.
+- **Commitments appear in the timeline but are not editable there** — they are drawn on
+  the muted surface with no border, and only `BloqueTiempo` cards are buttons. Editing a
+  commitment is the phase 5 form; editing it from the timeline would need to answer what
+  a single occurrence of a series means, which is out of scope.
+- **A block's color comes from what it points at** (ramo color, category color) and a
+  loose block is gray. That makes the ref visible: when the source is deleted, the bar
+  turns gray on its own.
+- **A new block never spills past 23:00** — the last slot proposes 22:30-23:00 — and any
+  entry outside the timeline is clipped rather than drawn beyond it.
