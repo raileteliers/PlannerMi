@@ -305,15 +305,23 @@ function TareasDeEvaluacion({ evaluacionId }: { evaluacionId: string }) {
 }
 
 /**
- * The row that makes loading a semester fast: title, date, Enter, next.
+ * The row that makes loading a semester fast: title, date, save, next.
  * Enter on the title jumps to the date; Enter on the date saves and comes
- * back to the title, so a whole semester is one uninterrupted run.
+ * back to the title, so a whole semester is one uninterrupted run on a
+ * keyboard — and the ↵ button does the same for a thumb.
+ *
+ * Type, importance and description open up as soon as the row is in use, so
+ * an evaluación can be finished in one pass instead of being refined later.
  */
 function NuevaEvaluacionRow({ ramoId, autoFocus }: { ramoId: string; autoFocus: boolean }) {
   const createEvaluacion = usePlannerStore((s) => s.createEvaluacion)
   const [titulo, setTitulo] = useState('')
   const [fechaTexto, setFechaTexto] = useState('')
+  const [tipo, setTipo] = useState<Evaluacion['tipo']>('prueba')
+  const [importancia, setImportancia] = useState<Evaluacion['importancia']>('media')
+  const [descripcion, setDescripcion] = useState('')
   const [error, setError] = useState(false)
+  const [enUso, setEnUso] = useState(autoFocus)
   const tituloRef = useRef<HTMLInputElement>(null)
   const fechaRef = useRef<HTMLInputElement>(null)
   /**
@@ -321,73 +329,140 @@ function NuevaEvaluacionRow({ ramoId, autoFocus }: { ramoId: string; autoFocus: 
    * same tick — before React has re-rendered with the cleared state. The ref
    * is emptied synchronously, so that second call finds nothing to save.
    */
-  const pendiente = useRef({ titulo: '', fechaTexto: '' })
+  const pendiente = useRef({ titulo: '', fechaTexto: '', descripcion: '' })
 
   async function guardar() {
     const limpio = pendiente.current.titulo.trim()
     const textoFecha = pendiente.current.fechaTexto
+    const detalle = pendiente.current.descripcion.trim()
     const fecha = parseFechaCorta(textoFecha)
     if (limpio === '' || fecha === null) {
       setError(textoFecha.trim() !== '' && fecha === null)
       return
     }
 
-    pendiente.current = { titulo: '', fechaTexto: '' }
+    pendiente.current = { titulo: '', fechaTexto: '', descripcion: '' }
     setTitulo('')
     setFechaTexto('')
+    setDescripcion('')
     setError(false)
     tituloRef.current?.focus()
+
+    // Tipo carries over — a semester is usually runs of the same kind — but
+    // importancia resets. A sticky "alta" paints red day numbers in the month
+    // for evaluaciones nobody marked, and red is the one channel that has to
+    // stay expensive.
+    setImportancia('media')
 
     const creada = await createEvaluacion({
       ramoId,
       titulo: limpio,
       fecha,
-      tipo: 'prueba',
-      importancia: 'media',
+      tipo,
+      importancia,
+      ...(detalle === '' ? {} : { descripcion: detalle }),
     })
     if (!creada) {
-      pendiente.current = { titulo: limpio, fechaTexto: textoFecha }
+      pendiente.current = { titulo: limpio, fechaTexto: textoFecha, descripcion: detalle }
       setTitulo(limpio)
       setFechaTexto(textoFecha)
+      setDescripcion(detalle)
     }
   }
 
+  const vacio = titulo === '' && fechaTexto === '' && descripcion === ''
+
   return (
-    <div className="flex items-center gap-3 border-b border-border-hairline">
-      <input
-        ref={tituloRef}
-        value={titulo}
-        autoFocus={autoFocus}
-        onChange={(e) => {
-          pendiente.current.titulo = e.target.value
-          setTitulo(e.target.value)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') fechaRef.current?.focus()
-        }}
-        placeholder="Nueva evaluación"
-        aria-label="Título de la nueva evaluación"
-        className="min-h-[52px] min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-ink-tertiary"
-      />
-      <input
-        ref={fechaRef}
-        value={fechaTexto}
-        inputMode="numeric"
-        onChange={(e) => {
-          pendiente.current.fechaTexto = e.target.value
-          setFechaTexto(e.target.value)
-          setError(false)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') void guardar()
-        }}
-        onBlur={() => void guardar()}
-        placeholder="12/9"
-        aria-label="Fecha de la nueva evaluación"
-        className={`min-h-[52px] w-20 bg-transparent text-right text-body outline-none placeholder:text-ink-tertiary ${
-          error ? 'text-importance' : ''
-        }`}
-      />
+    <div
+      // pr-14 keeps the ↵ out of the floating FAB's corner: two buttons in the
+      // same 44px would mean the wrong one wins.
+      className="flex flex-col gap-2 border-b border-border-hairline py-2 pr-14"
+      onFocus={() => setEnUso(true)}
+      onBlur={(e) => {
+        // Leaving the row entirely, with nothing typed, folds it back.
+        if (e.currentTarget.contains(e.relatedTarget)) return
+        if (vacio) setEnUso(false)
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <input
+          ref={tituloRef}
+          value={titulo}
+          autoFocus={autoFocus}
+          onChange={(e) => {
+            pendiente.current.titulo = e.target.value
+            setTitulo(e.target.value)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') fechaRef.current?.focus()
+          }}
+          placeholder="Nueva evaluación"
+          aria-label="Título de la nueva evaluación"
+          className="min-h-[44px] min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-ink-tertiary"
+        />
+
+        {/* A box, so it reads as a field to fill and not as a stray number. */}
+        <input
+          ref={fechaRef}
+          value={fechaTexto}
+          inputMode="numeric"
+          onChange={(e) => {
+            pendiente.current.fechaTexto = e.target.value
+            setFechaTexto(e.target.value)
+            setError(false)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void guardar()
+          }}
+          placeholder="12/9"
+          aria-label="Fecha de la nueva evaluación"
+          className={`h-11 w-16 shrink-0 rounded-card border text-center text-body outline-none placeholder:text-ink-tertiary ${
+            error ? 'border-importance text-importance' : 'border-border-strong'
+          }`}
+        />
+
+        {/* The keyboard's return key does this too; a phone needs the button. */}
+        <button
+          type="button"
+          onClick={() => void guardar()}
+          aria-label="Guardar evaluación"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-accent text-body text-on-accent"
+        >
+          ↵
+        </button>
+      </div>
+
+      {enUso && (
+        <div className="flex flex-col gap-2">
+          <ChipGroup
+            label="Tipo"
+            value={tipo}
+            options={TIPOS_EVALUACION}
+            labels={TIPO_LABEL}
+            onChange={setTipo}
+          />
+          <ChipGroup
+            label="Importancia"
+            value={importancia}
+            options={IMPORTANCIAS}
+            labels={IMPORTANCIA_LABEL}
+            onChange={setImportancia}
+          />
+          <input
+            value={descripcion}
+            onChange={(e) => {
+              pendiente.current.descripcion = e.target.value
+              setDescripcion(e.target.value)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') void guardar()
+            }}
+            placeholder="Descripción (opcional)"
+            aria-label="Descripción de la nueva evaluación"
+            className="min-h-[44px] bg-transparent text-body outline-none placeholder:text-ink-tertiary"
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -451,8 +526,8 @@ function CampoFecha({ value, onSave }: { value: string; onSave: (fecha: string) 
       value={editando ? texto : formatFechaEditable(value)}
       inputMode="numeric"
       aria-label="Fecha"
-      className={`min-h-[44px] w-24 bg-transparent text-body outline-none ${
-        error ? 'text-importance' : ''
+      className={`h-11 w-16 rounded-card border text-center text-body outline-none ${
+        error ? 'border-importance text-importance' : 'border-border-strong'
       }`}
       onFocus={() => {
         setTexto(formatFechaEditable(value))

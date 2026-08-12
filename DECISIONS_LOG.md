@@ -179,3 +179,22 @@ with the reason.
 - **Six 44px color targets and a name field do not fit one row** at 390px, so the new-ramo
   row stacks: name on top, colors below. The dots went from 36px to 44px.
 - **Verified there are no spinners** and no loading text anywhere in `src`.
+
+## After phase 6 — the inline evaluación row, on request
+
+- **The date is a bordered box**, not a bare right-aligned number, so it reads as a field
+  to fill. Turns red on input it cannot parse.
+- **Type, importance and description are part of creating**, opening as soon as the row is
+  in use and folding back when it is left empty. `DESIGN.md` §3.3 had them as a later
+  refinement ("se editan con un tap en la fila ya creada"); finishing an evaluación in one
+  pass is what was asked for, and the fast path is untouched — title, date, save.
+- **A ↵ button next to the date**, because a phone keyboard's return key is not something
+  you can point at. It does exactly what Enter does.
+- **The date field no longer saves on blur.** With chips in the row, tapping one blurred
+  the date and saved a half-filled evaluación. Saving is now Enter or the button —
+  explicit, which is what the extra fields require.
+- **Tipo carries over to the next row, importancia does not.** A run of evaluaciones is
+  usually the same type, but a sticky "alta" would paint red day numbers in the month for
+  evaluaciones nobody marked, and red is the one channel that has to stay expensive.
+- **The row reserves 56px on its right** so the ↵ never shares a spot with the floating
+  FAB, where the wrong button would win the tap.
