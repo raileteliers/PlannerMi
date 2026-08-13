@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Pressable, Text, TextInput } from 'react-native'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { TOKENS } from '../../design/tokens'
 
 /** The one field every form starts with. */
 export function CampoTitulo({
@@ -14,13 +16,14 @@ export function CampoTitulo({
   autoFocus?: boolean
 }) {
   return (
-    <input
+    <TextInput
       value={value}
       autoFocus={autoFocus}
-      onChange={(e) => onChange(e.target.value)}
+      onChangeText={onChange}
       placeholder={placeholder}
-      aria-label="Título"
-      className="min-h-[44px] border-b border-border-hairline text-body outline-none placeholder:text-ink-tertiary"
+      placeholderTextColor={TOKENS.inkTertiary}
+      accessibilityLabel="Título"
+      className="min-h-[44px] border-b border-border-hairline text-body text-ink"
     />
   )
 }
@@ -45,24 +48,24 @@ export function FormActions({
 
   return (
     <>
-      {error && <p className="text-meta text-importance">{error}</p>}
+      {error && <Text className="text-meta text-importance">{error}</Text>}
 
-      <button
-        type="button"
-        onClick={onGuardar}
-        className="min-h-[44px] w-full rounded-card bg-accent text-body text-on-accent"
+      <Pressable
+        accessibilityRole="button"
+        onPress={onGuardar}
+        className="min-h-[44px] items-center justify-center rounded-card bg-accent"
       >
-        Guardar
-      </button>
+        <Text className="text-body text-on-accent">Guardar</Text>
+      </Pressable>
 
       {onEliminar && (
-        <button
-          type="button"
-          onClick={() => setConfirmando(true)}
-          className="min-h-[44px] w-full text-body text-importance"
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setConfirmando(true)}
+          className="min-h-[44px] items-center justify-center"
         >
-          {labelEliminar}
-        </button>
+          <Text className="text-body text-importance">{labelEliminar}</Text>
+        </Pressable>
       )}
 
       {confirmando && onEliminar && (

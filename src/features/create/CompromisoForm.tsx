@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { getDay } from 'date-fns'
+import { Pressable, Text, TextInput, View } from 'react-native'
+import { Checkbox } from '../../components/Checkbox'
 import { ChipGroup } from '../../components/ChipGroup'
 import { DateInput } from '../../components/DateInput'
 import { TimeInput } from '../../components/TimeInput'
 import { CATEGORY_LABEL, type CategoriaCompromiso } from '../../design/palette'
 import { IMPORTANCIA_LABEL } from '../../design/labels'
+import { TOKENS } from '../../design/tokens'
 import { formatFechaCorta } from '../../lib/dateInput'
 import { parseISODate, type ISODate } from '../../lib/date'
 import { parseHoraCorta } from '../../lib/time'
@@ -86,7 +89,7 @@ export function CompromisoForm({
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-1 pb-2">
+    <View className="gap-3 pb-2 pt-1">
       <CampoTitulo
         value={titulo}
         onChange={(v) => {
@@ -97,14 +100,14 @@ export function CompromisoForm({
         autoFocus={!existente}
       />
 
-      <div className="flex items-end gap-4">
-        <div className="flex-1">
+      <View className="flex-row items-end gap-4">
+        <View className="flex-1">
           <DateInput
             label={recurrencia ? 'Desde' : 'Fecha'}
             value={fecha}
             onChange={setFecha}
           />
-        </div>
+        </View>
         <TimeInput
           label="Hora (opcional)"
           value={horaTexto}
@@ -113,20 +116,21 @@ export function CompromisoForm({
             setError(null)
           }}
         />
-      </div>
+      </View>
 
-      <label className="flex items-center gap-2">
-        <span className="text-meta text-ink-tertiary">Dura</span>
-        <input
+      <View className="flex-row items-center gap-2">
+        <Text className="text-meta text-ink-tertiary">Dura</Text>
+        <TextInput
           value={duracion}
           inputMode="numeric"
           placeholder="60"
-          aria-label="Duración en minutos"
-          onChange={(e) => setDuracion(e.target.value.replace(/\D/g, ''))}
-          className="min-h-[44px] w-16 border-b border-border-hairline text-center text-body outline-none placeholder:text-ink-tertiary"
+          placeholderTextColor={TOKENS.inkTertiary}
+          accessibilityLabel="Duración en minutos"
+          onChangeText={(texto) => setDuracion(texto.replace(/\D/g, ''))}
+          className="min-h-[44px] w-16 border-b border-border-hairline text-center text-body text-ink"
         />
-        <span className="text-meta text-ink-tertiary">min</span>
-      </label>
+        <Text className="text-meta text-ink-tertiary">min</Text>
+      </View>
 
       <ChipGroup
         label="Categoría"
@@ -143,32 +147,31 @@ export function CompromisoForm({
         onChange={setImportancia}
       />
 
-      <label className="flex min-h-[44px] items-center gap-3">
-        <input
-          type="checkbox"
+      <View className="min-h-[44px] flex-row items-center">
+        <Checkbox
+          label="Se repite"
           checked={recurrencia !== null}
-          onChange={(e) =>
+          onChange={(marcado) =>
             setRecurrencia(
-              e.target.checked
-                ? recurrenciaNueva(getDay(parseISODate(fecha ?? fechaInicial)))
-                : null,
+              marcado ? recurrenciaNueva(getDay(parseISODate(fecha ?? fechaInicial))) : null,
             )
           }
-          className="h-4 w-4 accent-[var(--pm-text)]"
         />
-        <span className="text-body">Se repite</span>
-      </label>
+        <Text className="text-body text-ink">Se repite</Text>
+      </View>
 
       {recurrencia && <RecurrenceEditor value={recurrencia} onChange={setRecurrencia} />}
 
       {existente?.recurrencia && fechaOcurrencia && (
-        <button
-          type="button"
-          onClick={() => void cancelarOcurrencia()}
-          className="flex min-h-[44px] items-center text-body underline"
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void cancelarOcurrencia()}
+          className="min-h-[44px] justify-center"
         >
-          Cancelar solo el {formatFechaCorta(fechaOcurrencia)}
-        </button>
+          <Text className="text-body text-ink underline">
+            Cancelar solo el {formatFechaCorta(fechaOcurrencia)}
+          </Text>
+        </Pressable>
       )}
 
       <FormActions
@@ -185,7 +188,7 @@ export function CompromisoForm({
             }
           : {})}
       />
-    </div>
+    </View>
   )
 }
 

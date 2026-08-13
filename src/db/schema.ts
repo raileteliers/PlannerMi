@@ -1,4 +1,4 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import * as SQLite from 'expo-sqlite'
 import {
   emptyDataset,
   type BloqueTiempo,
@@ -10,24 +10,32 @@ import {
 } from '../model/types'
 import type { DeletePlan } from '../logic/cascade'
 
-export const DB_NAME = 'plannermi'
+export const DB_NAME = 'plannermi.db'
 export const DB_VERSION = 1
 
-export interface PlannerMiDB extends DBSchema {
-  ramos: { key: string; value: Ramo }
-  evaluaciones: {
-    key: string
-    value: Evaluacion
-    indexes: { 'by-ramo': string; 'by-fecha': string }
-  }
-  compromisos: { key: string; value: Compromiso }
-  tareas: { key: string; value: Tarea; indexes: { 'by-evaluacion': string } }
-  bloques: { key: string; value: BloqueTiempo; indexes: { 'by-fecha': string } }
+/**
+ * Every table is `id TEXT PRIMARY KEY, data TEXT NOT NULL`, the row being the
+ * entity as JSON.
+ *
+ * A column per field would let SQL filter, but nothing in the app filters in
+ * SQL: `loadDataset` reads the whole base once at startup — hundreds of
+ * records — and every screen selects from that in memory. Columns would be a
+ * second copy of `model/types.ts` to keep in sync for a query nobody makes.
+ * What SQLite is here for is the transaction, which the cascade delete and the
+ * import both need, and that works the same either way.
+ */
+export interface StoreValues {
+  ramos: Ramo
+  evaluaciones: Evaluacion
+  compromisos: Compromiso
+  tareas: Tarea
+  bloques: BloqueTiempo
 }
 
-export type PlannerDB = IDBPDatabase<PlannerMiDB>
+export type StoreName = keyof StoreValues
 
-export type StoreName = 'ramos' | 'evaluaciones' | 'compromisos' | 'tareas' | 'bloques'
+export type PlannerDB = SQLite.SQLiteDatabase
+
 const ALL_STORES: StoreName[] = [
   'ramos',
   'evaluaciones',
@@ -36,51 +44,65 @@ const ALL_STORES: StoreName[] = [
   'bloques',
 ]
 
+interface Row {
+  data: string
+}
+
 /**
  * Single place where the schema version lives. Every future migration is one
- * more `if (oldVersion < n)` branch here.
+ * more `if (version < n)` branch here, tracked by SQLite's own `user_version`.
  */
-export function openPlannerDB(): Promise<PlannerDB> {
-  return openDB<PlannerMiDB>(DB_NAME, DB_VERSION, {
-    upgrade(db, oldVersion) {
-      if (oldVersion < 1) {
-        db.createObjectStore('ramos', { keyPath: 'id' })
+export async function openPlannerDB(): Promise<PlannerDB> {
+  const db = await SQLite.openDatabaseAsync(DB_NAME)
 
-        const evaluaciones = db.createObjectStore('evaluaciones', { keyPath: 'id' })
-        evaluaciones.createIndex('by-ramo', 'ramoId')
-        evaluaciones.createIndex('by-fecha', 'fecha')
+  const result = await db.getFirstAsync<{ user_version: number }>(
+    'PRAGMA user_version',
+  )
+  const version = result?.user_version ?? 0
 
-        db.createObjectStore('compromisos', { keyPath: 'id' })
+  if (version < 1) {
+    await db.execAsync(`
+      PRAGMA journal_mode = WAL;
+      ${ALL_STORES.map(
+        (store) =>
+          `CREATE TABLE IF NOT EXISTS ${store} (id TEXT PRIMARY KEY NOT NULL, data TEXT NOT NULL);`,
+      ).join('\n')}
+      PRAGMA user_version = ${DB_VERSION};
+    `)
+  }
 
-        const tareas = db.createObjectStore('tareas', { keyPath: 'id' })
-        // Loose tasks have no evaluacionId and simply stay out of this index.
-        tareas.createIndex('by-evaluacion', 'evaluacionId')
-
-        const bloques = db.createObjectStore('bloques', { keyPath: 'id' })
-        bloques.createIndex('by-fecha', 'fecha')
-      }
-    },
-  })
+  return db
 }
 
 /** The whole base, read once at startup. Hundreds of records. */
 export async function loadDataset(db: PlannerDB): Promise<Dataset> {
-  const [ramos, evaluaciones, compromisos, tareas, bloques] = await Promise.all([
-    db.getAll('ramos'),
-    db.getAll('evaluaciones'),
-    db.getAll('compromisos'),
-    db.getAll('tareas'),
-    db.getAll('bloques'),
-  ])
-  return { ramos, evaluaciones, compromisos, tareas, bloques }
+  const [ramos, evaluaciones, compromisos, tareas, bloques] = await Promise.all(
+    ALL_STORES.map((store) => readAll(db, store)),
+  )
+  return {
+    ramos: ramos as Ramo[],
+    evaluaciones: evaluaciones as Evaluacion[],
+    compromisos: compromisos as Compromiso[],
+    tareas: tareas as Tarea[],
+    bloques: bloques as BloqueTiempo[],
+  }
+}
+
+async function readAll(db: PlannerDB, store: StoreName): Promise<unknown[]> {
+  const rows = await db.getAllAsync<Row>(`SELECT data FROM ${store}`)
+  return rows.map((row) => JSON.parse(row.data) as unknown)
 }
 
 export async function putRecord<S extends StoreName>(
   db: PlannerDB,
   store: S,
-  value: PlannerMiDB[S]['value'],
+  value: StoreValues[S],
 ): Promise<void> {
-  await db.put(store, value)
+  await db.runAsync(
+    `INSERT OR REPLACE INTO ${store} (id, data) VALUES (?, ?)`,
+    value.id,
+    JSON.stringify(value),
+  )
 }
 
 export async function deleteRecord(
@@ -88,7 +110,7 @@ export async function deleteRecord(
   store: StoreName,
   id: string,
 ): Promise<void> {
-  await db.delete(store, id)
+  await db.runAsync(`DELETE FROM ${store} WHERE id = ?`, id)
 }
 
 /**
@@ -100,29 +122,52 @@ export async function applyDeletePlanToDB(
   plan: DeletePlan,
   bloquesActualizados: BloqueTiempo[],
 ): Promise<void> {
-  const tx = db.transaction(ALL_STORES, 'readwrite')
-  await Promise.all([
-    ...plan.ramoIds.map((id) => tx.objectStore('ramos').delete(id)),
-    ...plan.evaluacionIds.map((id) => tx.objectStore('evaluaciones').delete(id)),
-    ...plan.compromisoIds.map((id) => tx.objectStore('compromisos').delete(id)),
-    ...plan.tareaIds.map((id) => tx.objectStore('tareas').delete(id)),
-    ...bloquesActualizados.map((b) => tx.objectStore('bloques').put(b)),
-    tx.done,
-  ])
+  await db.withTransactionAsync(async () => {
+    await deleteMany(db, 'ramos', plan.ramoIds)
+    await deleteMany(db, 'evaluaciones', plan.evaluacionIds)
+    await deleteMany(db, 'compromisos', plan.compromisoIds)
+    await deleteMany(db, 'tareas', plan.tareaIds)
+    for (const bloque of bloquesActualizados) {
+      await putRecord(db, 'bloques', bloque)
+    }
+  })
+}
+
+async function deleteMany(
+  db: PlannerDB,
+  store: StoreName,
+  ids: string[],
+): Promise<void> {
+  for (const id of ids) {
+    await db.runAsync(`DELETE FROM ${store} WHERE id = ?`, id)
+  }
 }
 
 /** Import: wipe and rewrite in a single transaction. */
-export async function replaceDataset(db: PlannerDB, dataset: Dataset): Promise<void> {
-  const tx = db.transaction(ALL_STORES, 'readwrite')
-  await Promise.all([
-    ...ALL_STORES.map((store) => tx.objectStore(store).clear()),
-    ...dataset.ramos.map((r) => tx.objectStore('ramos').put(r)),
-    ...dataset.evaluaciones.map((e) => tx.objectStore('evaluaciones').put(e)),
-    ...dataset.compromisos.map((c) => tx.objectStore('compromisos').put(c)),
-    ...dataset.tareas.map((t) => tx.objectStore('tareas').put(t)),
-    ...dataset.bloques.map((b) => tx.objectStore('bloques').put(b)),
-    tx.done,
-  ])
+export async function replaceDataset(
+  db: PlannerDB,
+  dataset: Dataset,
+): Promise<void> {
+  await db.withTransactionAsync(async () => {
+    for (const store of ALL_STORES) {
+      await db.runAsync(`DELETE FROM ${store}`)
+    }
+    await writeAll(db, 'ramos', dataset.ramos)
+    await writeAll(db, 'evaluaciones', dataset.evaluaciones)
+    await writeAll(db, 'compromisos', dataset.compromisos)
+    await writeAll(db, 'tareas', dataset.tareas)
+    await writeAll(db, 'bloques', dataset.bloques)
+  })
+}
+
+async function writeAll<S extends StoreName>(
+  db: PlannerDB,
+  store: S,
+  values: StoreValues[S][],
+): Promise<void> {
+  for (const value of values) {
+    await putRecord(db, store, value)
+  }
 }
 
 export const clearDataset = (db: PlannerDB): Promise<void> =>

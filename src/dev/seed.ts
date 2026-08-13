@@ -1,7 +1,6 @@
 import { addMonths, setDate, startOfMonth } from 'date-fns'
 import { newId } from '../lib/id'
 import { toISODate, type ISODate } from '../lib/date'
-import { usePlannerStore } from '../store/usePlannerStore'
 import { emptyDataset, type Dataset, type Evaluacion, type Ramo } from '../model/types'
 
 /**
@@ -9,7 +8,10 @@ import { emptyDataset, type Dataset, type Evaluacion, type Ramo } from '../model
  * recurring commitments and two one-offs. Dates are relative to today so the
  * month view always has something in it.
  *
- * Loaded from the console: `plannermi.seed()`.
+ * It is the same shape as the end-to-end verification script, so the state
+ * that script builds by hand can also be reached in one tap while checking a
+ * change. Loaded from the dev-only buttons at the bottom of Ajustes — a
+ * phone has no console to type into.
  */
 export function buildSeedDataset(hoy = new Date()): Dataset {
   const esteMes = (dia: number): ISODate => toISODate(setDate(startOfMonth(hoy), dia))
@@ -113,27 +115,4 @@ export function buildSeedDataset(hoy = new Date()): Dataset {
       { id: newId(), titulo: 'Comprar cuaderno', hecha: false },
     ],
   }
-}
-
-/** Attached to `window.plannermi` in dev builds only. */
-export function installDevTools(): void {
-  const store = usePlannerStore
-  const api = {
-    seed: async (hoy?: string) => {
-      const datos = buildSeedDataset(hoy ? new Date(hoy) : new Date())
-      const ok = await store.getState().replaceAll(datos)
-      console.log(ok ? '[plannermi] seed cargado' : '[plannermi] no se pudo cargar el seed')
-      return ok
-    },
-    clear: async () => {
-      const ok = await store.getState().replaceAll(emptyDataset())
-      console.log(ok ? '[plannermi] base vacía' : '[plannermi] no se pudo vaciar la base')
-      return ok
-    },
-    data: () => store.getState().data,
-    exportFile: () => store.getState().buildExportFile(),
-    store,
-  }
-  Object.assign(window, { plannermi: api })
-  console.log('[plannermi] dev tools: plannermi.seed() · plannermi.clear() · plannermi.data()')
 }

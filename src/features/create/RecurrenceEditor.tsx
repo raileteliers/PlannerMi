@@ -1,3 +1,4 @@
+import { Pressable, Text, TextInput, View } from 'react-native'
 import { DateInput } from '../../components/DateInput'
 import { ChipGroup } from '../../components/ChipGroup'
 import { DIA_SEMANA_LABEL, FRECUENCIA_LABEL } from '../../design/labels'
@@ -27,20 +28,20 @@ export function RecurrenceEditor({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-l-2 border-border-hairline pl-3">
-      <label className="flex items-center gap-2">
-        <span className="text-meta text-ink-tertiary">Cada</span>
-        <input
+    <View className="gap-3 border-l-2 border-border-hairline pl-3">
+      <View className="flex-row items-center gap-2">
+        <Text className="text-meta text-ink-tertiary">Cada</Text>
+        <TextInput
           value={String(value.intervalo)}
           inputMode="numeric"
-          aria-label="Cada cuántos"
-          onChange={(e) => {
-            const n = Number(e.target.value.replace(/\D/g, ''))
+          accessibilityLabel="Cada cuántos"
+          onChangeText={(texto) => {
+            const n = Number(texto.replace(/\D/g, ''))
             onChange({ ...value, intervalo: Number.isFinite(n) && n > 0 ? n : 1 })
           }}
-          className="min-h-[44px] w-12 border-b border-border-hairline text-center text-body outline-none"
+          className="min-h-[44px] w-12 border-b border-border-hairline text-center text-body text-ink"
         />
-      </label>
+      </View>
 
       <ChipGroup
         label="Frecuencia"
@@ -51,25 +52,27 @@ export function RecurrenceEditor({
       />
 
       {value.frecuencia === 'semanal' && (
-        <div className="flex" role="group" aria-label="Días de la semana">
+        <View className="flex-row" accessibilityLabel="Días de la semana">
           {DIA_SEMANA_LABEL.map((label, dia) => {
             const activo = dias.includes(dia)
             return (
-              <button
+              <Pressable
                 key={dia}
-                type="button"
-                aria-pressed={activo}
-                aria-label={`Día ${label}`}
-                onClick={() => toggleDia(dia)}
-                className={`h-11 w-11 text-meta ${
-                  activo ? 'font-bold text-ink' : 'text-ink-tertiary'
-                }`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: activo }}
+                accessibilityLabel={`Día ${label}`}
+                onPress={() => toggleDia(dia)}
+                className="h-11 w-11 items-center justify-center"
               >
-                {label}
-              </button>
+                <Text
+                  className={`text-meta ${activo ? 'font-bold text-ink' : 'text-ink-tertiary'}`}
+                >
+                  {label}
+                </Text>
+              </Pressable>
             )
           })}
-        </div>
+        </View>
       )}
 
       <DateInput
@@ -80,6 +83,6 @@ export function RecurrenceEditor({
           onChange({ ...value, ...(hasta ? { hasta } : { hasta: undefined }) })
         }
       />
-    </div>
+    </View>
   )
 }

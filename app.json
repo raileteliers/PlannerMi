@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "PlannerMi",
+    "slug": "plannermi",
+    "version": "1.0.0",
+    "scheme": "plannermi",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#ffffff",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.plannermi.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "ios": {
+      "bundleIdentifier": "com.plannermi.app",
+      "supportsTablet": false
+    },
+    "plugins": ["expo-router", "expo-sqlite", "expo-sharing"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

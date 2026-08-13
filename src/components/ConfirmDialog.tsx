@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react'
+import { Modal, Pressable, Text, View } from 'react-native'
+import { SHADOW_FLOAT } from '../design/tokens'
 
 /**
  * Used for deletes, where the message carries the concrete numbers
@@ -17,49 +18,42 @@ export function ConfirmDialog({
   onConfirm: () => void
   onCancel: () => void
 }) {
-  const cancelRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    cancelRef.current?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onCancel])
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 p-4"
-      onClick={onCancel}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={titulo}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-card bg-surface-raised p-4 shadow-float"
+    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onCancel}>
+      <Pressable
+        className="flex-1 items-center justify-end p-4"
+        style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}
+        onPress={onCancel}
       >
-        <p className="text-body font-bold">{titulo}</p>
-        {detalle && <p className="mt-2 text-body text-ink-secondary">{detalle}</p>}
-        <div className="mt-6 flex gap-2">
-          <button
-            ref={cancelRef}
-            type="button"
-            onClick={onCancel}
-            className="min-h-[44px] flex-1 rounded-card border border-border-strong text-body"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="min-h-[44px] flex-1 rounded-card bg-importance text-body font-bold text-on-accent"
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+        <Pressable
+          accessibilityViewIsModal
+          accessibilityLabel={titulo}
+          // Swallows the tap so it does not reach the scrim behind.
+          onPress={() => {}}
+          style={SHADOW_FLOAT}
+          className="w-full rounded-card bg-surface-raised p-4"
+        >
+          <Text className="text-body font-bold text-ink">{titulo}</Text>
+          {detalle && <Text className="mt-2 text-body text-ink-secondary">{detalle}</Text>}
+
+          <View className="mt-6 flex-row gap-2">
+            <Pressable
+              accessibilityRole="button"
+              onPress={onCancel}
+              className="min-h-[44px] flex-1 items-center justify-center rounded-card border border-border-strong"
+            >
+              <Text className="text-body text-ink">Cancelar</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onConfirm}
+              className="min-h-[44px] flex-1 items-center justify-center rounded-card bg-importance"
+            >
+              <Text className="text-body font-bold text-on-accent">{confirmLabel}</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
   )
 }

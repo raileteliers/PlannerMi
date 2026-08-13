@@ -14,8 +14,17 @@ export const COURSE_COLORS: ColorToken[] = [
   'magenta',
 ]
 
-/** CSS variable holding the hex for a course color. */
-export const courseColorVar = (token: ColorToken): string => `var(--pm-course-${token})`
+/** The hex for a course color. React Native has no `var()`. */
+const COURSE_HEX: Record<ColorToken, string> = {
+  blue: '#2563eb',
+  teal: '#0f766e',
+  green: '#15803d',
+  amber: '#b45309',
+  violet: '#7c3aed',
+  magenta: '#be185d',
+}
+
+export const courseColor = (token: ColorToken): string => COURSE_HEX[token]
 
 export type CategoriaCompromiso = 'salud' | 'deporte' | 'tramite' | 'personal'
 

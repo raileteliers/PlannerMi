@@ -1,4 +1,7 @@
-import { CATEGORY_COLOR, CATEGORY_LABEL, courseColorVar } from '../../design/palette'
+import { Pressable, Text, View } from 'react-native'
+import { Checkbox } from '../../components/Checkbox'
+import { CATEGORY_COLOR, CATEGORY_LABEL, courseColor } from '../../design/palette'
+import { RECURRING_ALPHA, TOKENS } from '../../design/tokens'
 import type { FranjaSuperior } from '../../logic/dayTimeline'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import { ramoById } from '../../store/selectors'
@@ -24,16 +27,16 @@ export function TodayStrip({
   const updateTarea = usePlannerStore((s) => s.updateTarea)
 
   return (
-    <ul className="shrink-0 border-b border-border-hairline pb-2">
+    <View className="border-b border-border-hairline pb-2">
       {franja.evaluaciones.map((evaluacion) => {
         const ramo = ramoById(data, evaluacion.ramoId)
         return (
           <Fila
             key={evaluacion.id}
-            color={ramo ? courseColorVar(ramo.color) : undefined}
+            {...(ramo ? { color: courseColor(ramo.color) } : {})}
             titulo={evaluacion.titulo}
             alta={evaluacion.importancia === 'alta'}
-            detalle={ramo?.nombre}
+            {...(ramo?.nombre ? { detalle: ramo.nombre } : {})}
             onAgendar={() =>
               onAgendar({
                 titulo: evaluacion.titulo,
@@ -47,7 +50,7 @@ export function TodayStrip({
       {franja.compromisosSinHora.map((compromiso) => (
         <Fila
           key={compromiso.id}
-          color={courseColorVar(CATEGORY_COLOR[compromiso.categoria])}
+          color={courseColor(CATEGORY_COLOR[compromiso.categoria])}
           tenue={compromiso.recurrencia !== undefined}
           titulo={compromiso.titulo}
           alta={compromiso.importancia === 'alta'}
@@ -62,31 +65,30 @@ export function TodayStrip({
       ))}
 
       {franja.tareas.map((tarea) => (
-        <li key={tarea.id} className="flex items-center gap-2">
-          {/* 44px target around a 16px box. */}
-          <label className="flex min-h-[44px] min-w-0 flex-1 items-center gap-3 pl-1">
-            <input
-              type="checkbox"
-              checked={tarea.hecha}
-              onChange={(e) => void updateTarea(tarea.id, { hecha: e.target.checked })}
-              className="h-4 w-4 accent-[var(--pm-text)]"
-            />
-            <span
-              className={`truncate text-body ${tarea.hecha ? 'text-ink-tertiary line-through' : ''}`}
-            >
-              {tarea.titulo}
-            </span>
-          </label>
+        <View key={tarea.id} className="flex-row items-center gap-2">
+          <Checkbox
+            label={tarea.titulo}
+            checked={tarea.hecha}
+            onChange={(hecha) => void updateTarea(tarea.id, { hecha })}
+          />
+          <Text
+            numberOfLines={1}
+            className={`min-h-[44px] flex-1 text-body ${
+              tarea.hecha ? 'text-ink-tertiary line-through' : 'text-ink'
+            }`}
+          >
+            {tarea.titulo}
+          </Text>
           {!tarea.hecha && (
             <BotonAgendar
-              onClick={() =>
+              onPress={() =>
                 onAgendar({ titulo: tarea.titulo, ref: { tipo: 'tarea', id: tarea.id } })
               }
             />
           )}
-        </li>
+        </View>
       ))}
-    </ul>
+    </View>
   )
 }
 
@@ -106,28 +108,34 @@ function Fila({
   onAgendar: () => void
 }) {
   return (
-    <li className="flex min-h-[44px] items-center gap-3">
-      <span
-        className="h-6 w-1 shrink-0 rounded-bar"
-        style={{ background: color ?? 'var(--pm-border-strong)', opacity: tenue ? 0.35 : 1 }}
+    <View className="min-h-[44px] flex-row items-center gap-3">
+      <View
+        className="h-6 w-1 rounded-bar"
+        style={{
+          backgroundColor: color ?? TOKENS.borderStrong,
+          opacity: tenue ? RECURRING_ALPHA : 1,
+        }}
       />
-      <span className="min-w-0 flex-1">
-        <span className={`block truncate text-body ${alta ? 'font-bold text-importance' : ''}`}>
+      <View className="flex-1">
+        <Text
+          numberOfLines={1}
+          className={`text-body ${alta ? 'font-bold text-importance' : 'text-ink'}`}
+        >
           {titulo}
-        </span>
-        {detalle && <span className="block text-meta text-ink-tertiary">{detalle}</span>}
-      </span>
-      <BotonAgendar onClick={onAgendar} />
-    </li>
+        </Text>
+        {detalle && <Text className="text-meta text-ink-tertiary">{detalle}</Text>}
+      </View>
+      <BotonAgendar onPress={onAgendar} />
+    </View>
   )
 }
 
-const BotonAgendar = ({ onClick }: { onClick: () => void }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="min-h-[44px] shrink-0 rounded-card border border-border-strong px-3 text-meta"
+const BotonAgendar = ({ onPress }: { onPress: () => void }) => (
+  <Pressable
+    accessibilityRole="button"
+    onPress={onPress}
+    className="min-h-[44px] justify-center rounded-card border border-border-strong px-3"
   >
-    Agendar
-  </button>
+    <Text className="text-meta text-ink">Agendar</Text>
+  </Pressable>
 )

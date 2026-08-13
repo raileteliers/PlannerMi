@@ -1,11 +1,16 @@
 import { useEffect } from 'react'
+import { Pressable, Text } from 'react-native'
 import { usePlannerStore } from '../store/usePlannerStore'
+import { SHADOW_FLOAT } from '../design/tokens'
 
 const VISIBLE_MS = 4000
 
 /**
  * The only transient message in the app: a write failed and the screen was
  * rolled back to what is actually saved.
+ *
+ * It is a button — tapping dismisses it — and it carries the neutral accent.
+ * A red toast would spend the one color that means importance.
  */
 export function Toast() {
   const mensaje = usePlannerStore((s) => s.writeError)
@@ -20,13 +25,14 @@ export function Toast() {
   if (!mensaje) return null
 
   return (
-    <button
-      type="button"
-      onClick={descartar}
-      role="status"
-      className="absolute bottom-4 left-4 z-40 flex min-h-[44px] items-center rounded-card bg-accent px-4 text-body text-on-accent shadow-float"
+    <Pressable
+      onPress={descartar}
+      accessibilityRole="button"
+      accessibilityLiveRegion="polite"
+      style={SHADOW_FLOAT}
+      className="absolute bottom-4 left-4 z-40 min-h-[44px] justify-center rounded-card bg-accent px-4"
     >
-      {mensaje}
-    </button>
+      <Text className="text-body text-on-accent">{mensaje}</Text>
+    </Pressable>
   )
 }

@@ -1,39 +1,59 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { todayISO } from '../../lib/date'
+import { pickJSON, shareJSON } from '../../lib/files'
 import { validateImportText } from '../../logic/importExport'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import type { Dataset } from '../../model/types'
 
 /**
- * The backup, and the only migration path if the app is ever packaged as an
- * APK: Chrome's IndexedDB and a WebView's are different databases.
+ * The backup, and the only way data moves between installs — uninstalling the
+ * app takes its database with it.
+ *
+ * Exporting opens the system share sheet rather than writing to a folder: an
+ * app cannot drop a file into Descargas unasked, and a backup that only lives
+ * inside the app is not a backup.
  */
 export function ExportImport() {
   const data = usePlannerStore((s) => s.data)
   const buildExportFile = usePlannerStore((s) => s.buildExportFile)
   const replaceAll = usePlannerStore((s) => s.replaceAll)
 
-  const fileRef = useRef<HTMLInputElement>(null)
   const [errores, setErrores] = useState<string[]>([])
-  const [pendiente, setPendiente] = useState<{ datos: Dataset; avisos: string[] } | null>(null)
+  const [pendiente, setPendiente] = useState<{ datos: Dataset; avisos: string[] } | null>(
+    null,
+  )
 
-  function exportar() {
-    const contenido = JSON.stringify(buildExportFile(), null, 2)
-    const url = URL.createObjectURL(new Blob([contenido], { type: 'application/json' }))
-    const enlace = document.createElement('a')
-    enlace.href = url
-    enlace.download = `plannermi-${todayISO()}.json`
-    enlace.click()
-    URL.revokeObjectURL(url)
+  async function exportar() {
+    setErrores([])
+    try {
+      await shareJSON(
+        `plannermi-${todayISO()}.json`,
+        JSON.stringify(buildExportFile(), null, 2),
+      )
+    } catch (error) {
+      console.error('[plannermi] export failed', error)
+      setErrores(['No se pudo exportar.'])
+    }
   }
 
   /** Validated whole before anything is written: a bad file changes nothing. */
-  async function elegirArchivo(archivo: File) {
+  async function importar() {
     setErrores([])
     setPendiente(null)
 
-    const resultado = validateImportText(await archivo.text())
+    let texto: string | null
+    try {
+      texto = await pickJSON()
+    } catch (error) {
+      console.error('[plannermi] import failed', error)
+      return setErrores(['No se pudo leer el archivo.'])
+    }
+    // The picker was dismissed, which is not an error.
+    if (texto === null) return
+
+    const resultado = validateImportText(texto)
     if (!resultado.ok) return setErrores(resultado.errores)
     setPendiente({ datos: resultado.datos, avisos: resultado.avisos })
   }
@@ -46,47 +66,34 @@ export function ExportImport() {
   }
 
   return (
-    <section className="mt-6">
-      <h2 className="text-body font-bold">Tus datos</h2>
-      <p className="mt-1 text-meta text-ink-secondary">
-        {resumen(data)}
-      </p>
+    <View className="mt-6">
+      <Text className="text-body font-bold text-ink">Tus datos</Text>
+      <Text className="mt-1 text-meta text-ink-secondary">{resumen(data)}</Text>
 
-      <button
-        type="button"
-        onClick={exportar}
-        className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-card bg-accent text-body text-on-accent"
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => void exportar()}
+        className="mt-3 min-h-[44px] items-center justify-center rounded-card bg-accent"
       >
-        Exportar JSON
-      </button>
+        <Text className="text-body text-on-accent">Exportar JSON</Text>
+      </Pressable>
 
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        className="mt-2 flex min-h-[44px] w-full items-center justify-center rounded-card border border-border-strong text-body"
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => void importar()}
+        className="mt-2 min-h-[44px] items-center justify-center rounded-card border border-border-strong"
       >
-        Importar JSON
-      </button>
-      <input
-        ref={fileRef}
-        type="file"
-        accept="application/json,.json"
-        className="hidden"
-        onChange={(e) => {
-          const archivo = e.target.files?.[0]
-          e.target.value = '' // let the same file be picked twice
-          if (archivo) void elegirArchivo(archivo)
-        }}
-      />
+        <Text className="text-body text-ink">Importar JSON</Text>
+      </Pressable>
 
       {errores.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-1">
+        <View className="mt-3 gap-1">
           {errores.map((mensaje) => (
-            <li key={mensaje} className="text-meta text-importance">
+            <Text key={mensaje} className="text-meta text-importance">
               {mensaje}
-            </li>
+            </Text>
           ))}
-        </ul>
+        </View>
       )}
 
       {pendiente && (
@@ -98,7 +105,7 @@ export function ExportImport() {
           onCancel={() => setPendiente(null)}
         />
       )}
-    </section>
+    </View>
   )
 }
 

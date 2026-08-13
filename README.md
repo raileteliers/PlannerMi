@@ -1,20 +1,21 @@
 # PlannerMi
 
-Local-first monthly planner for a single user on a single Android device.
-See `DESIGN.md` for the product decisions and `BUILD_PROMPT.md` for the build plan.
+Local-first monthly planner for a single user on a single Android phone.
+See `DESIGN.md` for the product decisions and `DECISIONS_LOG.md` for what was
+settled while building.
 
 ## Stack
 
-Vite · React 19 · TypeScript (strict) · Tailwind v4 · react-router (HashRouter) ·
-IndexedDB via `idb` · Zustand · date-fns · vite-plugin-pwa · Vitest
+Expo SDK 57 · React Native 0.86 · React 19 · TypeScript (strict) ·
+expo-router · NativeWind (Tailwind v3) · SQLite via `expo-sqlite` · Zustand ·
+date-fns · Vitest
 
 ## Scripts
 
 ```bash
-npm run dev        # dev server (service worker enabled)
-npm run build      # typecheck + production build
-npm run preview    # serve the production build
-npm run typecheck  # tsc -b
+npm start          # Expo dev server — scan the QR with Expo Go
+npm run android    # open it on a connected device or emulator
+npm run typecheck  # tsc --noEmit
 npm run test       # vitest, pure logic only
 npm run lint       # oxlint
 ```
@@ -22,10 +23,20 @@ npm run lint       # oxlint
 ## Layout
 
 ```
+app/           the routes, one file per screen (expo-router)
 src/
-  app/       app shell (header, bottom tabs)
-  design/    color palette tokens as TypeScript
-  lib/       pure helpers (dates, ...)
-  routes/    one file per screen
-  styles/    tokens.css — every color in the app
+  components/  the shared widgets (sheets, chips, inputs)
+  db/          the SQLite schema and every statement in the app
+  design/      palette, labels, and the token values as TypeScript
+  dev/         the fixture behind the dev-only buttons in Ajustes
+  features/    the screens' own parts, grouped by screen
+  lib/         pure helpers (dates, times, ids, files)
+  logic/       the pure core: cascade, recurrence, timeline, import/export
+  model/       the domain types
+  shell/       app startup and the blocking database error
+  store/       the Zustand store and its selectors
+tailwind.config.js   every color in the app
 ```
+
+`src/logic` and `src/lib` are pure and carry the tests. Everything React
+Native lives above them and is checked on a real phone.

@@ -1,3 +1,5 @@
+import { Pressable, Text, View } from 'react-native'
+
 /** Single-choice chips. Gray, like everything that is not data. */
 export function ChipGroup<T extends string>({
   value,
@@ -13,26 +15,25 @@ export function ChipGroup<T extends string>({
   label: string
 }) {
   return (
-    <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
+    <View className="flex-row flex-wrap gap-2" accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((option) => {
         const activo = option === value
         return (
-          <button
+          <Pressable
             key={option}
-            type="button"
-            role="radio"
-            aria-checked={activo}
-            onClick={() => onChange(option)}
-            className={`min-h-[44px] rounded-card border px-3 text-meta ${
-              activo
-                ? 'border-ink bg-accent text-on-accent'
-                : 'border-border-strong text-ink-secondary'
+            accessibilityRole="radio"
+            accessibilityState={{ checked: activo }}
+            onPress={() => onChange(option)}
+            className={`min-h-[44px] justify-center rounded-card border px-3 ${
+              activo ? 'border-ink bg-accent' : 'border-border-strong'
             }`}
           >
-            {labels[option]}
-          </button>
+            <Text className={`text-meta ${activo ? 'text-on-accent' : 'text-ink-secondary'}`}>
+              {labels[option]}
+            </Text>
+          </Pressable>
         )
       })}
-    </div>
+    </View>
   )
 }

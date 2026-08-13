@@ -1,10 +1,16 @@
 import { useState } from 'react'
+import { Text, TextInput, View } from 'react-native'
 import { formatFechaCorta, formatFechaEditable, parseFechaCorta } from '../lib/dateInput'
+import { TOKENS } from '../design/tokens'
 import type { ISODate } from '../lib/date'
 
 /**
  * Dates are typed, not picked: "12/9" and done. Shows what it understood
  * underneath, and turns red on what it cannot read.
+ *
+ * The native date picker was never on the table — loading a semester is a
+ * dozen dates in a row, and three taps each is the difference between doing
+ * it and not doing it.
  */
 export function DateInput({
   value,
@@ -25,26 +31,27 @@ export function DateInput({
   const error = !vacio && parseada === null
 
   return (
-    <label className="flex flex-col">
-      <span className="text-meta text-ink-tertiary">{label}</span>
-      <input
+    <View>
+      <Text className="text-meta text-ink-tertiary">{label}</Text>
+      <TextInput
         value={texto}
         inputMode="numeric"
         placeholder={placeholder}
-        aria-label={label}
-        onChange={(e) => {
-          setTexto(e.target.value)
-          const fecha = parseFechaCorta(e.target.value)
+        placeholderTextColor={TOKENS.inkTertiary}
+        accessibilityLabel={label}
+        onChangeText={(siguiente) => {
+          setTexto(siguiente)
+          const fecha = parseFechaCorta(siguiente)
           if (fecha) onChange(fecha)
-          else if (e.target.value.trim() === '' && opcional) onChange(null)
+          else if (siguiente.trim() === '' && opcional) onChange(null)
         }}
-        className={`min-h-[44px] w-full border-b border-border-hairline text-body outline-none placeholder:text-ink-tertiary ${
-          error ? 'text-importance' : ''
+        className={`min-h-[44px] border-b border-border-hairline text-body ${
+          error ? 'text-importance' : 'text-ink'
         }`}
       />
-      <span className="min-h-4 text-meta text-ink-tertiary">
+      <Text className="min-h-4 text-meta text-ink-tertiary">
         {parseada ? formatFechaCorta(parseada) : error ? 'No entiendo esa fecha' : ''}
-      </span>
-    </label>
+      </Text>
+    </View>
   )
 }

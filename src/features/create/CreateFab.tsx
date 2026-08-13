@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Pressable, Text, View } from 'react-native'
 import { BottomSheet } from '../../components/BottomSheet'
+import { SHADOW_FLOAT } from '../../design/tokens'
 import { formatFechaCorta } from '../../lib/dateInput'
 import { useUiStore } from '../../store/useUiStore'
 import { EvaluacionForm } from './EvaluacionForm'
@@ -37,30 +39,30 @@ export function CreateFab() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setAbierto(true)}
-        aria-label="Crear"
-        className="absolute right-4 bottom-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-title text-on-accent shadow-float"
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Crear"
+        onPress={() => setAbierto(true)}
+        style={SHADOW_FLOAT}
+        className="absolute bottom-4 right-4 z-30 h-14 w-14 items-center justify-center rounded-full bg-accent"
       >
-        +
-      </button>
+        <Text className="text-title text-on-accent">+</Text>
+      </Pressable>
 
       {abierto && opcion === null && (
         <BottomSheet titulo={`Agregar para el ${formatFechaCorta(fecha)}`} onClose={cerrar}>
-          <ul className="pb-2">
+          <View className="pb-2">
             {(Object.keys(OPCION_LABEL) as Opcion[]).map((o) => (
-              <li key={o}>
-                <button
-                  type="button"
-                  onClick={() => setOpcion(o)}
-                  className="flex min-h-[56px] w-full items-center border-b border-border-hairline text-body"
-                >
-                  {OPCION_LABEL[o]}
-                </button>
-              </li>
+              <Pressable
+                key={o}
+                accessibilityRole="button"
+                onPress={() => setOpcion(o)}
+                className="min-h-[56px] justify-center border-b border-border-hairline"
+              >
+                <Text className="text-body text-ink">{OPCION_LABEL[o]}</Text>
+              </Pressable>
             ))}
-          </ul>
+          </View>
         </BottomSheet>
       )}
 

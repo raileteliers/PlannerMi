@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { useNavigate } from 'react-router'
+import { useRouter } from 'expo-router'
+import { Pressable, Text, View } from 'react-native'
 import { BottomSheet } from '../../components/BottomSheet'
+import { Checkbox } from '../../components/Checkbox'
 import {
   CATEGORY_COLOR,
   CATEGORY_LABEL,
-  courseColorVar,
+  courseColor,
   type ColorToken,
 } from '../../design/palette'
 import { TIPO_LABEL } from '../../design/labels'
+import { RECURRING_ALPHA, TOKENS } from '../../design/tokens'
 import { parseISODate, type ISODate } from '../../lib/date'
 import { expandCompromiso } from '../../logic/recurrence'
 import { tareasDelDia } from '../../logic/monthItems'
@@ -35,7 +38,7 @@ type Editando =
 export function DaySheet({ fecha, onClose }: { fecha: ISODate; onClose: () => void }) {
   const data = usePlannerStore((s) => s.data)
   const updateTarea = usePlannerStore((s) => s.updateTarea)
-  const navigate = useNavigate()
+  const router = useRouter()
   const [editando, setEditando] = useState<Editando | null>(null)
 
   const evaluaciones = data.evaluaciones
@@ -84,15 +87,15 @@ export function DaySheet({ fecha, onClose }: { fecha: ISODate; onClose: () => vo
   return (
     <BottomSheet titulo={titulo} onClose={onClose}>
       {vacio ? (
-        <p className="py-4 text-body text-ink-secondary">No tenés nada ese día.</p>
+        <Text className="py-4 text-body text-ink-secondary">No tenés nada ese día.</Text>
       ) : (
-        <ul className="pb-2">
+        <View className="pb-2">
           {evaluaciones.map((evaluacion) => {
             const ramo = ramoById(data, evaluacion.ramoId)
             return (
               <Fila
                 key={evaluacion.id}
-                color={ramo?.color}
+                {...(ramo ? { color: ramo.color } : {})}
                 titulo={evaluacion.titulo}
                 alta={evaluacion.importancia === 'alta'}
                 detalle={[ramo?.nombre, TIPO_LABEL[evaluacion.tipo]]
@@ -118,39 +121,41 @@ export function DaySheet({ fecha, onClose }: { fecha: ISODate; onClose: () => vo
           ))}
 
           {tareas.map((tarea) => (
-            <li key={tarea.id} className="flex items-center gap-2">
-              <label className="flex min-h-[44px] items-center">
-                <input
-                  type="checkbox"
-                  checked={tarea.hecha}
-                  onChange={(e) => void updateTarea(tarea.id, { hecha: e.target.checked })}
-                  aria-label={tarea.titulo}
-                  className="h-4 w-4 accent-[var(--pm-text)]"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => setEditando({ tipo: 'tarea', entidad: tarea })}
-                className="flex min-h-[44px] min-w-0 flex-1 items-center text-left"
+            <View key={tarea.id} className="flex-row items-center gap-2">
+              <Checkbox
+                label={tarea.titulo}
+                checked={tarea.hecha}
+                onChange={(hecha) => void updateTarea(tarea.id, { hecha })}
+              />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setEditando({ tipo: 'tarea', entidad: tarea })}
+                className="min-h-[44px] flex-1 justify-center"
               >
-                <span
-                  className={`truncate text-body ${tarea.hecha ? 'text-ink-tertiary line-through' : ''}`}
+                <Text
+                  numberOfLines={1}
+                  className={`text-body ${
+                    tarea.hecha ? 'text-ink-tertiary line-through' : 'text-ink'
+                  }`}
                 >
                   {tarea.titulo}
-                </span>
-              </button>
-            </li>
+                </Text>
+              </Pressable>
+            </View>
           ))}
-        </ul>
+        </View>
       )}
 
-      <button
-        type="button"
-        onClick={() => void navigate(`/dia/${fecha}`)}
-        className="mt-2 min-h-[44px] w-full rounded-card bg-accent text-body text-on-accent"
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => {
+          onClose()
+          router.push({ pathname: '/dia/[fecha]', params: { fecha } })
+        }}
+        className="mt-2 min-h-[44px] items-center justify-center rounded-card bg-accent"
       >
-        Organizar día
-      </button>
+        <Text className="text-body text-on-accent">Organizar día</Text>
+      </Pressable>
     </BottomSheet>
   )
 }
@@ -171,26 +176,27 @@ function Fila({
   onEditar: () => void
 }) {
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onEditar}
-        className="flex min-h-[44px] w-full items-center gap-3 text-left"
-      >
-        <span
-          className="h-6 w-1 shrink-0 rounded-bar"
-          style={{
-            background: color ? courseColorVar(color) : 'var(--pm-border-strong)',
-            opacity: tenue ? 'var(--pm-recurring-alpha)' : 1,
-          }}
-        />
-        <span className="min-w-0 flex-1">
-          <span className={`block truncate text-body ${alta ? 'font-bold text-importance' : ''}`}>
-            {titulo}
-          </span>
-          {detalle && <span className="block text-meta text-ink-tertiary">{detalle}</span>}
-        </span>
-      </button>
-    </li>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onEditar}
+      className="min-h-[44px] flex-row items-center gap-3"
+    >
+      <View
+        className="h-6 w-1 rounded-bar"
+        style={{
+          backgroundColor: color ? courseColor(color) : TOKENS.borderStrong,
+          opacity: tenue ? RECURRING_ALPHA : 1,
+        }}
+      />
+      <View className="flex-1">
+        <Text
+          numberOfLines={1}
+          className={`text-body ${alta ? 'font-bold text-importance' : 'text-ink'}`}
+        >
+          {titulo}
+        </Text>
+        {detalle !== '' && <Text className="text-meta text-ink-tertiary">{detalle}</Text>}
+      </View>
+    </Pressable>
   )
 }

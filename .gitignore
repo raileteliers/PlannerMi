@@ -23,5 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-# PWA build output
-dev-dist
+# Expo
+.expo
+expo-env.d.ts
+android
+ios
+*.orig.*
+web-build

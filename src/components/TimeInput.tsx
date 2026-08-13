@@ -1,4 +1,6 @@
+import { Text, TextInput, View } from 'react-native'
 import { parseHoraCorta } from '../lib/time'
+import { TOKENS } from '../design/tokens'
 import type { HoraHHMM } from '../lib/date'
 
 /** Same idea as DateInput: "19", "19:30" and "1930" all work. */
@@ -17,18 +19,19 @@ export function TimeInput({
   const error = !vacio && parseHoraCorta(value) === null
 
   return (
-    <label className="flex flex-col">
-      <span className="text-meta text-ink-tertiary">{label}</span>
-      <input
+    <View>
+      <Text className="text-meta text-ink-tertiary">{label}</Text>
+      <TextInput
         value={value}
         inputMode="numeric"
         placeholder={placeholder}
-        aria-label={label}
-        onChange={(e) => onChange(e.target.value, parseHoraCorta(e.target.value))}
-        className={`min-h-[44px] w-20 border-b border-border-hairline text-body outline-none placeholder:text-ink-tertiary ${
-          error ? 'text-importance' : ''
+        placeholderTextColor={TOKENS.inkTertiary}
+        accessibilityLabel={label}
+        onChangeText={(texto) => onChange(texto, parseHoraCorta(texto))}
+        className={`min-h-[44px] w-20 border-b border-border-hairline text-body ${
+          error ? 'text-importance' : 'text-ink'
         }`}
       />
-    </label>
+    </View>
   )
 }

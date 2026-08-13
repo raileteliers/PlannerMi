@@ -1,28 +1,45 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
-import { ChipGroup } from '../components/ChipGroup'
-import { ColorPicker } from '../components/ColorPicker'
-import { ConfirmDialog } from '../components/ConfirmDialog'
-import { formatFechaCorta, formatFechaEditable, parseFechaCorta } from '../lib/dateInput'
-import { usePlannerStore } from '../store/usePlannerStore'
-import { evaluacionesDeRamo, ramoById, tareasDeEvaluacion } from '../store/selectors'
-import type { DeletePlan } from '../logic/cascade'
-import { IMPORTANCIAS, TIPOS_EVALUACION, type Evaluacion, type Ramo } from '../model/types'
-import { IMPORTANCIA_LABEL, TIPO_LABEL } from '../design/labels'
+import { Link, useLocalSearchParams, useRouter } from 'expo-router'
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
-export function CourseDetailPage() {
-  const { id = '' } = useParams()
+import { ChipGroup } from '../../src/components/ChipGroup'
+import { Checkbox } from '../../src/components/Checkbox'
+import { ColorPicker } from '../../src/components/ColorPicker'
+import { ConfirmDialog } from '../../src/components/ConfirmDialog'
+import { TOKENS } from '../../src/design/tokens'
+import {
+  formatFechaCorta,
+  formatFechaEditable,
+  parseFechaCorta,
+} from '../../src/lib/dateInput'
+import { usePlannerStore } from '../../src/store/usePlannerStore'
+import {
+  evaluacionesDeRamo,
+  ramoById,
+  tareasDeEvaluacion,
+} from '../../src/store/selectors'
+import type { DeletePlan } from '../../src/logic/cascade'
+import {
+  IMPORTANCIAS,
+  TIPOS_EVALUACION,
+  type Evaluacion,
+  type Ramo,
+} from '../../src/model/types'
+import { IMPORTANCIA_LABEL, TIPO_LABEL } from '../../src/design/labels'
+
+export default function CourseDetailPage() {
+  const { id = '' } = useLocalSearchParams<{ id?: string }>()
   const data = usePlannerStore((s) => s.data)
   const ramo = ramoById(data, id)
 
   if (!ramo) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4">
-        <p className="text-body text-ink-secondary">Ese ramo ya no existe.</p>
-        <Link to="/ramos" className="text-body underline">
+      <View className="flex-1 items-center justify-center gap-4">
+        <Text className="text-body text-ink-secondary">Ese ramo ya no existe.</Text>
+        <Link href="/ramos" className="text-body text-ink underline">
           Volver a Ramos
         </Link>
-      </div>
+      </View>
     )
   }
 
@@ -34,7 +51,7 @@ function DetalleRamo({ ramo }: { ramo: Ramo }) {
   const updateRamo = usePlannerStore((s) => s.updateRamo)
   const deleteRamo = usePlannerStore((s) => s.deleteRamo)
   const planDeleteRamo = usePlannerStore((s) => s.planDeleteRamo)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const [confirmando, setConfirmando] = useState(false)
   const evaluaciones = evaluacionesDeRamo(data, ramo.id)
@@ -42,64 +59,69 @@ function DetalleRamo({ ramo }: { ramo: Ramo }) {
   async function eliminar() {
     setConfirmando(false)
     const ok = await deleteRamo(ramo.id)
-    if (ok) void navigate('/ramos')
+    if (ok) router.replace('/ramos')
   }
 
   return (
-    <div className="h-full overflow-y-auto px-4 pb-20">
-      <Link to="/ramos" className="flex min-h-[44px] items-center text-meta text-ink-secondary">
+    <ScrollView className="px-4" keyboardShouldPersistTaps="handled">
+      <Link href="/ramos" className="min-h-[44px] text-meta text-ink-secondary">
         ← Ramos
       </Link>
 
       <CampoTexto
         value={ramo.nombre}
         onSave={(nombre) => void updateRamo(ramo.id, { nombre })}
-        className="min-h-[44px] w-full text-title font-bold outline-none"
-        aria-label="Nombre del ramo"
+        className="min-h-[44px] text-title font-bold text-ink"
+        label="Nombre del ramo"
       />
       <CampoTexto
         value={ramo.sigla ?? ''}
         placeholder="Sigla"
         onSave={(sigla) => void updateRamo(ramo.id, { sigla: sigla || undefined })}
-        className="min-h-[44px] w-full text-meta text-ink-secondary outline-none placeholder:text-ink-tertiary"
-        aria-label="Sigla del ramo"
+        className="min-h-[44px] text-meta text-ink-secondary"
+        label="Sigla del ramo"
       />
 
-      <div className="mt-2">
+      <View className="mt-2">
         <ColorPicker
           value={ramo.color}
           onChange={(color) => void updateRamo(ramo.id, { color })}
         />
-      </div>
+      </View>
 
-      <ul className="mt-4">
+      <View className="mt-4">
         {evaluaciones.map((evaluacion) => (
           <EvaluacionRow key={evaluacion.id} evaluacion={evaluacion} />
         ))}
-      </ul>
+      </View>
 
       <NuevaEvaluacionRow ramoId={ramo.id} autoFocus={evaluaciones.length === 0} />
 
-      <div className="mt-10 flex flex-col gap-1">
-        <button
-          type="button"
-          onClick={() => void updateRamo(ramo.id, { archivado: !ramo.archivado })}
-          className="flex min-h-[44px] items-center text-body"
+      <View className="mt-10 gap-1">
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void updateRamo(ramo.id, { archivado: !ramo.archivado })}
+          className="min-h-[44px] justify-center"
         >
-          {ramo.archivado ? 'Desarchivar ramo' : 'Archivar ramo'}
-        </button>
-        <p className="text-meta text-ink-secondary">
+          <Text className="text-body text-ink">
+            {ramo.archivado ? 'Desarchivar ramo' : 'Archivar ramo'}
+          </Text>
+        </Pressable>
+        <Text className="text-meta text-ink-secondary">
           Un ramo archivado desaparece del mes y del día, pero conserva sus datos.
-        </p>
+        </Text>
 
-        <button
-          type="button"
-          onClick={() => setConfirmando(true)}
-          className="mt-4 flex min-h-[44px] items-center text-body text-importance"
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setConfirmando(true)}
+          className="mt-4 min-h-[44px] justify-center"
         >
-          Eliminar ramo
-        </button>
-      </div>
+          <Text className="text-body text-importance">Eliminar ramo</Text>
+        </Pressable>
+      </View>
+
+      {/* The FAB floats over this lane. */}
+      <View className="h-20" />
 
       {confirmando && (
         <ConfirmDialog
@@ -109,7 +131,7 @@ function DetalleRamo({ ramo }: { ramo: Ramo }) {
           onCancel={() => setConfirmando(false)}
         />
       )}
-    </div>
+    </ScrollView>
   )
 }
 
@@ -146,31 +168,33 @@ function EvaluacionRow({ evaluacion }: { evaluacion: Evaluacion }) {
   const alta = evaluacion.importancia === 'alta'
 
   return (
-    <li className="border-b border-border-hairline">
-      <button
-        type="button"
-        onClick={() => setAbierta((v) => !v)}
-        aria-expanded={abierta}
-        className="flex min-h-[52px] w-full items-center gap-3 text-left"
+    <View className="border-b border-border-hairline">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: abierta }}
+        onPress={() => setAbierta((v) => !v)}
+        className="min-h-[52px] flex-row items-center gap-3"
       >
-        <span
-          className={`w-24 shrink-0 text-meta ${alta ? 'font-bold text-importance' : 'text-ink-secondary'}`}
+        <Text
+          className={`w-24 text-meta ${
+            alta ? 'font-bold text-importance' : 'text-ink-secondary'
+          }`}
         >
           {formatFechaCorta(evaluacion.fecha)}
-        </span>
-        <span className="min-w-0 flex-1 truncate text-body">{evaluacion.titulo}</span>
+        </Text>
+        <Text numberOfLines={1} className="flex-1 text-body text-ink">
+          {evaluacion.titulo}
+        </Text>
         {tareas.length > 0 && (
-          <span className="shrink-0 text-meta text-ink-tertiary">
+          <Text className="text-meta text-ink-tertiary">
             {pendientes}/{tareas.length}
-          </span>
+          </Text>
         )}
-        <span className="shrink-0 text-meta text-ink-tertiary">
-          {TIPO_LABEL[evaluacion.tipo]}
-        </span>
-      </button>
+        <Text className="text-meta text-ink-tertiary">{TIPO_LABEL[evaluacion.tipo]}</Text>
+      </Pressable>
 
       {abierta && <EvaluacionEditor evaluacion={evaluacion} />}
-    </li>
+    </View>
   )
 }
 
@@ -182,8 +206,8 @@ function EvaluacionEditor({ evaluacion }: { evaluacion: Evaluacion }) {
   const [confirmando, setConfirmando] = useState(false)
 
   return (
-    <div className="pb-4 pl-24">
-      <div className="flex flex-col gap-3">
+    <View className="pb-4 pl-24">
+      <View className="gap-3">
         <ChipGroup
           label="Tipo"
           value={evaluacion.tipo}
@@ -204,24 +228,24 @@ function EvaluacionEditor({ evaluacion }: { evaluacion: Evaluacion }) {
           onSave={(descripcion) =>
             void updateEvaluacion(evaluacion.id, { descripcion: descripcion || undefined })
           }
-          className="min-h-[44px] w-full text-body outline-none placeholder:text-ink-tertiary"
-          aria-label="Descripción"
+          className="min-h-[44px] text-body text-ink"
+          label="Descripción"
         />
         <CampoFecha
           value={evaluacion.fecha}
           onSave={(fecha) => void updateEvaluacion(evaluacion.id, { fecha })}
         />
-      </div>
+      </View>
 
       <TareasDeEvaluacion evaluacionId={evaluacion.id} />
 
-      <button
-        type="button"
-        onClick={() => setConfirmando(true)}
-        className="mt-2 flex min-h-[44px] items-center text-meta text-importance"
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setConfirmando(true)}
+        className="mt-2 min-h-[44px] justify-center"
       >
-        Eliminar evaluación
-      </button>
+        <Text className="text-meta text-importance">Eliminar evaluación</Text>
+      </Pressable>
 
       {confirmando && (
         <ConfirmDialog
@@ -234,7 +258,7 @@ function EvaluacionEditor({ evaluacion }: { evaluacion: Evaluacion }) {
           onCancel={() => setConfirmando(false)}
         />
       )}
-    </div>
+    </View>
   )
 }
 
@@ -244,7 +268,6 @@ function TareasDeEvaluacion({ evaluacionId }: { evaluacionId: string }) {
   const updateTarea = usePlannerStore((s) => s.updateTarea)
   const deleteTarea = usePlannerStore((s) => s.deleteTarea)
   const [titulo, setTitulo] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
   const tareas = tareasDeEvaluacion(data, evaluacionId)
 
   async function guardar() {
@@ -253,62 +276,60 @@ function TareasDeEvaluacion({ evaluacionId }: { evaluacionId: string }) {
     // Cleared before the write, so fast typing cannot pile the next task
     // on top of this one.
     setTitulo('')
-    inputRef.current?.focus()
 
     const creada = await createTarea({ titulo: limpio, evaluacionId, hecha: false })
     if (!creada) setTitulo(limpio)
   }
 
   return (
-    <ul className="mt-2">
+    <View className="mt-2">
       {tareas.map((tarea) => (
-        <li key={tarea.id} className="flex items-center gap-2">
-          <label className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2">
-            <input
-              type="checkbox"
-              checked={tarea.hecha}
-              onChange={(e) => void updateTarea(tarea.id, { hecha: e.target.checked })}
-              className="h-4 w-4 accent-[var(--pm-text)]"
-            />
-            <span
-              className={`truncate text-body ${tarea.hecha ? 'text-ink-tertiary line-through' : ''}`}
-            >
-              {tarea.titulo}
-            </span>
-          </label>
-          <button
-            type="button"
-            onClick={() => void deleteTarea(tarea.id)}
-            aria-label={`Eliminar tarea ${tarea.titulo}`}
-            className="h-11 w-11 shrink-0 text-meta text-ink-tertiary"
+        <View key={tarea.id} className="flex-row items-center gap-2">
+          <Checkbox
+            label={tarea.titulo}
+            checked={tarea.hecha}
+            onChange={(hecha) => void updateTarea(tarea.id, { hecha })}
+          />
+          <Text
+            numberOfLines={1}
+            className={`min-h-[44px] flex-1 text-body ${
+              tarea.hecha ? 'text-ink-tertiary line-through' : 'text-ink'
+            }`}
           >
-            ✕
-          </button>
-        </li>
+            {tarea.titulo}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Eliminar tarea ${tarea.titulo}`}
+            onPress={() => void deleteTarea(tarea.id)}
+            className="h-11 w-11 items-center justify-center"
+          >
+            <Text className="text-meta text-ink-tertiary">✕</Text>
+          </Pressable>
+        </View>
       ))}
-      <li>
-        <input
-          ref={inputRef}
-          value={titulo}
-          onChange={(e) => setTitulo(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void guardar()
-          }}
-          onBlur={() => void guardar()}
-          placeholder="Nueva tarea"
-          aria-label="Nueva tarea"
-          className="min-h-[44px] w-full bg-transparent text-body outline-none placeholder:text-ink-tertiary"
-        />
-      </li>
-    </ul>
+
+      <TextInput
+        value={titulo}
+        onChangeText={setTitulo}
+        onSubmitEditing={() => void guardar()}
+        onBlur={() => void guardar()}
+        submitBehavior="submit"
+        returnKeyType="done"
+        placeholder="Nueva tarea"
+        placeholderTextColor={TOKENS.inkTertiary}
+        accessibilityLabel="Nueva tarea"
+        className="min-h-[44px] text-body text-ink"
+      />
+    </View>
   )
 }
 
 /**
  * The row that makes loading a semester fast: title, date, save, next.
- * Enter on the title jumps to the date; Enter on the date saves and comes
- * back to the title, so a whole semester is one uninterrupted run on a
- * keyboard — and the ↵ button does the same for a thumb.
+ * Return on the title jumps to the date; return on the date saves and comes
+ * back to the title, so a whole semester is one uninterrupted run — and the
+ * ↵ button does the same for a thumb that cannot reach a return key.
  *
  * Type, importance and description open up as soon as the row is in use, so
  * an evaluación can be finished in one pass instead of being refined later.
@@ -321,27 +342,30 @@ function NuevaEvaluacionRow({ ramoId, autoFocus }: { ramoId: string; autoFocus: 
   const [importancia, setImportancia] = useState<Evaluacion['importancia']>('media')
   const [descripcion, setDescripcion] = useState('')
   const [error, setError] = useState(false)
-  const [enUso, setEnUso] = useState(autoFocus)
-  const tituloRef = useRef<HTMLInputElement>(null)
-  const fechaRef = useRef<HTMLInputElement>(null)
-  /**
-   * Enter saves and moves focus, which fires the date field's blur in the
-   * same tick — before React has re-rendered with the cleared state. The ref
-   * is emptied synchronously, so that second call finds nothing to save.
-   */
-  const pendiente = useRef({ titulo: '', fechaTexto: '', descripcion: '' })
+  const [enfocado, setEnfocado] = useState(autoFocus)
+  const tituloRef = useRef<TextInput>(null)
+  const fechaRef = useRef<TextInput>(null)
+
+  const vacio = titulo === '' && fechaTexto === '' && descripcion === ''
+  // Open while anything is typed or a field holds the cursor, folded back
+  // when the row is left empty. Derived rather than tracked: React Native has
+  // no focus bubbling to hang a container's onFocus/onBlur off.
+  const enUso = enfocado || !vacio
+
+  /** A blur followed by a focus inside the row must not fold it shut. */
+  function soltarFoco() {
+    setTimeout(() => setEnfocado(false), 0)
+  }
 
   async function guardar() {
-    const limpio = pendiente.current.titulo.trim()
-    const textoFecha = pendiente.current.fechaTexto
-    const detalle = pendiente.current.descripcion.trim()
-    const fecha = parseFechaCorta(textoFecha)
+    const limpio = titulo.trim()
+    const detalle = descripcion.trim()
+    const fecha = parseFechaCorta(fechaTexto)
     if (limpio === '' || fecha === null) {
-      setError(textoFecha.trim() !== '' && fecha === null)
+      setError(fechaTexto.trim() !== '' && fecha === null)
       return
     }
 
-    pendiente.current = { titulo: '', fechaTexto: '', descripcion: '' }
     setTitulo('')
     setFechaTexto('')
     setDescripcion('')
@@ -363,77 +387,68 @@ function NuevaEvaluacionRow({ ramoId, autoFocus }: { ramoId: string; autoFocus: 
       ...(detalle === '' ? {} : { descripcion: detalle }),
     })
     if (!creada) {
-      pendiente.current = { titulo: limpio, fechaTexto: textoFecha, descripcion: detalle }
       setTitulo(limpio)
-      setFechaTexto(textoFecha)
+      setFechaTexto(fechaTexto)
       setDescripcion(detalle)
     }
   }
 
-  const vacio = titulo === '' && fechaTexto === '' && descripcion === ''
-
   return (
-    <div
-      // pr-14 keeps the ↵ out of the floating FAB's corner: two buttons in the
-      // same 44px would mean the wrong one wins.
-      className="flex flex-col gap-2 border-b border-border-hairline py-2 pr-14"
-      onFocus={() => setEnUso(true)}
-      onBlur={(e) => {
-        // Leaving the row entirely, with nothing typed, folds it back.
-        if (e.currentTarget.contains(e.relatedTarget)) return
-        if (vacio) setEnUso(false)
-      }}
-    >
-      <div className="flex items-center gap-2">
-        <input
+    // pr-14 keeps the ↵ out of the floating FAB's corner: two buttons in the
+    // same 44px would mean the wrong one wins.
+    <View className="gap-2 border-b border-border-hairline py-2 pr-14">
+      <View className="flex-row items-center gap-2">
+        <TextInput
           ref={tituloRef}
           value={titulo}
           autoFocus={autoFocus}
-          onChange={(e) => {
-            pendiente.current.titulo = e.target.value
-            setTitulo(e.target.value)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') fechaRef.current?.focus()
-          }}
+          onChangeText={setTitulo}
+          onFocus={() => setEnfocado(true)}
+          onBlur={soltarFoco}
+          onSubmitEditing={() => fechaRef.current?.focus()}
+          submitBehavior="submit"
+          returnKeyType="next"
           placeholder="Nueva evaluación"
-          aria-label="Título de la nueva evaluación"
-          className="min-h-[44px] min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-ink-tertiary"
+          placeholderTextColor={TOKENS.inkTertiary}
+          accessibilityLabel="Título de la nueva evaluación"
+          className="min-h-[44px] flex-1 text-body text-ink"
         />
 
         {/* A box, so it reads as a field to fill and not as a stray number. */}
-        <input
+        <TextInput
           ref={fechaRef}
           value={fechaTexto}
           inputMode="numeric"
-          onChange={(e) => {
-            pendiente.current.fechaTexto = e.target.value
-            setFechaTexto(e.target.value)
+          onChangeText={(texto) => {
+            setFechaTexto(texto)
             setError(false)
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') void guardar()
-          }}
+          onFocus={() => setEnfocado(true)}
+          onBlur={soltarFoco}
+          onSubmitEditing={() => void guardar()}
+          submitBehavior="submit"
+          returnKeyType="done"
           placeholder="12/9"
-          aria-label="Fecha de la nueva evaluación"
-          className={`h-11 w-16 shrink-0 rounded-card border text-center text-body outline-none placeholder:text-ink-tertiary ${
-            error ? 'border-importance text-importance' : 'border-border-strong'
+          placeholderTextColor={TOKENS.inkTertiary}
+          accessibilityLabel="Fecha de la nueva evaluación"
+          className={`h-11 w-16 rounded-card border text-center text-body ${
+            error ? 'border-importance text-importance' : 'border-border-strong text-ink'
           }`}
         />
 
         {/* The keyboard's return key does this too; a phone needs the button. */}
-        <button
-          type="button"
-          onClick={() => void guardar()}
-          aria-label="Guardar evaluación"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-card bg-accent text-body text-on-accent"
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Guardar evaluación"
+          onPress={() => void guardar()}
+          className="h-11 w-11 items-center justify-center rounded-card bg-accent"
         >
-          ↵
-        </button>
-      </div>
+          <Text className="text-body text-on-accent">↵</Text>
+        </Pressable>
+      </View>
 
       {enUso && (
-        <div className="flex flex-col gap-2">
+        <View className="gap-2">
           <ChipGroup
             label="Tipo"
             value={tipo}
@@ -448,38 +463,42 @@ function NuevaEvaluacionRow({ ramoId, autoFocus }: { ramoId: string; autoFocus: 
             labels={IMPORTANCIA_LABEL}
             onChange={setImportancia}
           />
-          <input
+          <TextInput
             value={descripcion}
-            onChange={(e) => {
-              pendiente.current.descripcion = e.target.value
-              setDescripcion(e.target.value)
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void guardar()
-            }}
+            onChangeText={setDescripcion}
+            onFocus={() => setEnfocado(true)}
+            onBlur={soltarFoco}
+            onSubmitEditing={() => void guardar()}
             placeholder="Descripción (opcional)"
-            aria-label="Descripción de la nueva evaluación"
-            className="min-h-[44px] bg-transparent text-body outline-none placeholder:text-ink-tertiary"
+            placeholderTextColor={TOKENS.inkTertiary}
+            accessibilityLabel="Descripción de la nueva evaluación"
+            className="min-h-[44px] text-body text-ink"
           />
-        </div>
+        </View>
       )}
-    </div>
+    </View>
   )
 }
 
-/** Edit in place: saves on blur and on Enter, reverts on Escape. */
+/**
+ * Edit in place: saves on blur and on return.
+ *
+ * The web version also reverted on Escape. A phone keyboard has no Escape,
+ * so the way back from a bad edit is to type the old value again — which is
+ * why nothing here destroys more than the one field being edited.
+ */
 function CampoTexto({
   value,
   onSave,
   className,
   placeholder,
-  'aria-label': ariaLabel,
+  label,
 }: {
   value: string
   onSave: (value: string) => void
   className: string
   placeholder?: string
-  'aria-label': string
+  label: string
 }) {
   const [texto, setTexto] = useState(value)
   const [editando, setEditando] = useState(false)
@@ -488,24 +507,18 @@ function CampoTexto({
   const mostrado = editando ? texto : value
 
   return (
-    <input
+    <TextInput
       value={mostrado}
       placeholder={placeholder}
-      aria-label={ariaLabel}
+      placeholderTextColor={TOKENS.inkTertiary}
+      accessibilityLabel={label}
       className={className}
+      returnKeyType="done"
       onFocus={() => {
         setTexto(value)
         setEditando(true)
       }}
-      onChange={(e) => setTexto(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') e.currentTarget.blur()
-        if (e.key === 'Escape') {
-          setTexto(value)
-          setEditando(false)
-          e.currentTarget.blur()
-        }
-      }}
+      onChangeText={setTexto}
       onBlur={() => {
         setEditando(false)
         const limpio = texto.trim()
@@ -522,23 +535,21 @@ function CampoFecha({ value, onSave }: { value: string; onSave: (fecha: string) 
   const [error, setError] = useState(false)
 
   return (
-    <input
+    <TextInput
       value={editando ? texto : formatFechaEditable(value)}
       inputMode="numeric"
-      aria-label="Fecha"
-      className={`h-11 w-16 rounded-card border text-center text-body outline-none ${
-        error ? 'border-importance text-importance' : 'border-border-strong'
+      accessibilityLabel="Fecha"
+      returnKeyType="done"
+      className={`h-11 w-16 rounded-card border text-center text-body ${
+        error ? 'border-importance text-importance' : 'border-border-strong text-ink'
       }`}
       onFocus={() => {
         setTexto(formatFechaEditable(value))
         setEditando(true)
       }}
-      onChange={(e) => {
-        setTexto(e.target.value)
+      onChangeText={(siguiente) => {
+        setTexto(siguiente)
         setError(false)
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') e.currentTarget.blur()
       }}
       onBlur={() => {
         setEditando(false)

@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link } from 'expo-router'
+import { Text, TextInput, View } from 'react-native'
 import { ChipGroup } from '../../components/ChipGroup'
+import { ColorChip } from '../../components/ColorChip'
 import { DateInput } from '../../components/DateInput'
-import { courseColorVar } from '../../design/palette'
 import { IMPORTANCIA_LABEL, TIPO_LABEL } from '../../design/labels'
+import { TOKENS } from '../../design/tokens'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import { ramosActivos } from '../../store/selectors'
 import {
@@ -40,18 +42,18 @@ export function EvaluacionForm({
 
   if (ramos.length === 0) {
     return (
-      <div className="py-4">
-        <p className="text-body text-ink-secondary">
+      <View className="py-4">
+        <Text className="text-body text-ink-secondary">
           Una evaluación va en un ramo, y todavía no tenés ninguno.
-        </p>
+        </Text>
         <Link
-          to="/ramos"
-          onClick={onClose}
-          className="mt-4 flex min-h-[44px] items-center text-body underline"
+          href="/ramos"
+          onPress={onClose}
+          className="mt-4 min-h-[44px] text-body text-ink underline"
         >
           Crear un ramo
         </Link>
-      </div>
+      </View>
     )
   }
 
@@ -77,30 +79,18 @@ export function EvaluacionForm({
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-1 pb-2">
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Ramo">
-        {ramos.map((ramo) => {
-          const activo = ramo.id === ramoId
-          return (
-            <button
-              key={ramo.id}
-              type="button"
-              role="radio"
-              aria-checked={activo}
-              onClick={() => setRamoId(ramo.id)}
-              className={`flex min-h-[44px] items-center gap-2 rounded-card border px-3 text-meta ${
-                activo ? 'border-ink' : 'border-border-strong text-ink-secondary'
-              }`}
-            >
-              <span
-                className="h-4 w-1 rounded-bar"
-                style={{ background: courseColorVar(ramo.color) }}
-              />
-              {ramo.sigla ?? ramo.nombre}
-            </button>
-          )
-        })}
-      </div>
+    <View className="gap-3 pb-2 pt-1">
+      <View className="flex-row flex-wrap gap-2" accessibilityRole="radiogroup" accessibilityLabel="Ramo">
+        {ramos.map((ramo) => (
+          <ColorChip
+            key={ramo.id}
+            label={ramo.sigla ?? ramo.nombre}
+            color={ramo.color}
+            activo={ramo.id === ramoId}
+            onPress={() => setRamoId(ramo.id)}
+          />
+        ))}
+      </View>
 
       <CampoTitulo
         value={titulo}
@@ -129,12 +119,13 @@ export function EvaluacionForm({
         onChange={setImportancia}
       />
 
-      <input
+      <TextInput
         value={descripcion}
-        onChange={(e) => setDescripcion(e.target.value)}
+        onChangeText={setDescripcion}
         placeholder="Descripción (opcional)"
-        aria-label="Descripción"
-        className="min-h-[44px] border-b border-border-hairline text-body outline-none placeholder:text-ink-tertiary"
+        placeholderTextColor={TOKENS.inkTertiary}
+        accessibilityLabel="Descripción"
+        className="min-h-[44px] border-b border-border-hairline text-body text-ink"
       />
 
       <FormActions
@@ -148,7 +139,7 @@ export function EvaluacionForm({
             }
           : {})}
       />
-    </div>
+    </View>
   )
 }
 

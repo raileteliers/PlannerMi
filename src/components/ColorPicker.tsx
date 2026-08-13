@@ -1,6 +1,8 @@
-import { COURSE_COLORS, courseColorVar, type ColorToken } from '../design/palette'
+import { Pressable, View } from 'react-native'
+import { COURSE_COLORS, courseColor, type ColorToken } from '../design/palette'
+import { TOKENS } from '../design/tokens'
 
-/** The closed palette as a row of dots. 44px targets, 16px dots. */
+/** The closed palette as a row of dots. 44px targets, 20px dots when chosen. */
 export function ColorPicker({
   value,
   onChange,
@@ -11,29 +13,33 @@ export function ColorPicker({
   label?: string
 }) {
   return (
-    <div className="flex" role="radiogroup" aria-label={label}>
-      {COURSE_COLORS.map((color) => (
-        <button
-          key={color}
-          type="button"
-          role="radio"
-          aria-checked={color === value}
-          aria-label={color}
-          onClick={() => onChange(color)}
-          className="flex h-11 w-11 items-center justify-center"
-        >
-          <span
-            className="block rounded-full"
-            style={{
-              background: courseColorVar(color),
-              width: color === value ? 20 : 14,
-              height: color === value ? 20 : 14,
-              outline: color === value ? '2px solid var(--pm-text)' : 'none',
-              outlineOffset: 2,
-            }}
-          />
-        </button>
-      ))}
-    </div>
+    <View className="flex-row" accessibilityRole="radiogroup" accessibilityLabel={label}>
+      {COURSE_COLORS.map((color) => {
+        const elegido = color === value
+        return (
+          <Pressable
+            key={color}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: elegido }}
+            accessibilityLabel={color}
+            onPress={() => onChange(color)}
+            className="h-11 w-11 items-center justify-center"
+          >
+            <View
+              className="rounded-full"
+              style={{
+                backgroundColor: courseColor(color),
+                width: elegido ? 20 : 14,
+                height: elegido ? 20 : 14,
+                // RN has no outline-offset: a ring is a border on a wrapper,
+                // so the chosen dot grows instead and takes a hairline ring.
+                borderWidth: elegido ? 2 : 0,
+                borderColor: TOKENS.ink,
+              }}
+            />
+          </Pressable>
+        )
+      })}
+    </View>
   )
 }

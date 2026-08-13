@@ -2,8 +2,8 @@ import { todayISO } from '../lib/date'
 import type { Dataset, Evaluacion, Ramo, Tarea } from '../model/types'
 
 /**
- * Alphabetical, because IndexedDB hands records back in primary-key order
- * and the keys are UUIDs — without a sort the list reshuffles on reload.
+ * Alphabetical, because SQLite hands rows back in primary-key order and the
+ * keys are UUIDs — without a sort the list reshuffles on reload.
  */
 const porNombre = (a: Ramo, b: Ramo) => a.nombre.localeCompare(b.nombre, 'es')
 

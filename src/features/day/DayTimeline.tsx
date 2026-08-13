@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { courseColorVar } from '../../design/palette'
+import { Pressable, ScrollView, Text, View } from 'react-native'
+import { courseColor } from '../../design/palette'
+import { RECURRING_ALPHA, TOKENS } from '../../design/tokens'
 import { toHoraHHMM } from '../../lib/time'
 import {
   SLOTS,
@@ -31,64 +33,83 @@ export function DayTimeline({
   onCrear: (inicioMin: number) => void
   onEditar: (bloque: BloqueTiempo) => void
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<ScrollView>(null)
   const ahoraMin = useAhoraMin(esHoy)
   const ubicadas = ubicarEntradas(entradas)
+
+  // React Native has no `calc()`, so the lane width is measured rather than
+  // expressed: entries are placed in pixels once the timeline knows how wide
+  // it is. Zero until the first layout, which is why entries wait for it.
+  const [ancho, setAncho] = useState(0)
 
   // Land on the interesting part of the day instead of at 07:00.
   useEffect(() => {
     const objetivo = (ahoraMin ?? 8 * 60) - TIMELINE_INICIO_MIN - SLOT_MIN
-    scrollRef.current?.scrollTo({ top: Math.max(0, (objetivo / SLOT_MIN) * SLOT_PX) })
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, (objetivo / SLOT_MIN) * SLOT_PX),
+      animated: false,
+    })
     // Only on mount: re-scrolling while the user reads would fight them.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
-    <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
+    <ScrollView
+      ref={scrollRef}
+      className="flex-1"
+      onLayout={(e) => setAncho(e.nativeEvent.layout.width)}
+    >
       {/* Extra height at the end so the last hour clears the floating FAB. */}
-      <div className="relative" style={{ height: SLOTS * SLOT_PX + 56 }}>
+      <View style={{ height: SLOTS * SLOT_PX + 56 }}>
         {Array.from({ length: SLOTS }, (_, i) => {
           const inicioMin = TIMELINE_INICIO_MIN + i * SLOT_MIN
           const enHora = inicioMin % 60 === 0
           return (
-            <button
+            <Pressable
               key={inicioMin}
-              type="button"
-              onClick={() => onCrear(inicioMin)}
-              aria-label={`Agregar bloque a las ${toHoraHHMM(inicioMin)}`}
-              className={`absolute right-0 left-0 ${enHora ? 'border-t border-border-hairline' : ''}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Agregar bloque a las ${toHoraHHMM(inicioMin)}`}
+              onPress={() => onCrear(inicioMin)}
+              className={`absolute left-0 right-0 ${
+                enHora ? 'border-t border-border-hairline' : ''
+              }`}
               style={{ top: i * SLOT_PX, height: SLOT_PX }}
             >
               {enHora && (
-                <span className="absolute top-1 left-1 text-meta text-ink-tertiary">
+                <Text className="absolute left-1 top-1 text-meta text-ink-tertiary">
                   {toHoraHHMM(inicioMin)}
-                </span>
+                </Text>
               )}
-            </button>
+            </Pressable>
           )
         })}
 
-        {ubicadas.map(({ entrada, columna, columnas }) => (
-          <Entrada
-            key={entrada.id}
-            entrada={entrada}
-            columna={columna}
-            columnas={columnas}
-            onEditar={onEditar}
-          />
-        ))}
+        {ancho > 0 &&
+          ubicadas.map(({ entrada, columna, columnas }) => (
+            <Entrada
+              key={entrada.id}
+              entrada={entrada}
+              columna={columna}
+              columnas={columnas}
+              anchoDisponible={ancho - GUTTER_PX}
+              onEditar={onEditar}
+            />
+          ))}
 
         {ahoraMin !== null && (
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute right-0 left-0 border-t border-importance"
+          <View
+            pointerEvents="none"
+            className="absolute left-0 right-0 border-t border-importance"
             style={{ top: ((ahoraMin - TIMELINE_INICIO_MIN) / SLOT_MIN) * SLOT_PX }}
           >
-            <span className="absolute -top-[3px] left-0 block h-[6px] w-[6px] rounded-full bg-importance" />
-          </div>
+            <View
+              className="absolute left-0 h-[6px] w-[6px] rounded-full bg-importance"
+              style={{ top: -3 }}
+            />
+          </View>
         )}
-      </div>
-    </div>
+      </View>
+    </ScrollView>
   )
 }
 
@@ -96,11 +117,13 @@ function Entrada({
   entrada,
   columna,
   columnas,
+  anchoDisponible,
   onEditar,
 }: {
   entrada: EntradaTimeline
   columna: number
   columnas: number
+  anchoDisponible: number
   onEditar: (bloque: BloqueTiempo) => void
 }) {
   // An entry can start before 07:00 or end after 23:00 — a doctor at 06:30,
@@ -110,52 +133,49 @@ function Entrada({
   const finVisible = Math.min(entrada.finMin, TIMELINE_FIN_MIN)
   const top = ((inicioVisible - TIMELINE_INICIO_MIN) / SLOT_MIN) * SLOT_PX
   const alto = Math.max(((finVisible - inicioVisible) / SLOT_MIN) * SLOT_PX, 22)
-  const ancho = `calc((100% - ${GUTTER_PX}px) / ${columnas})`
+  const ancho = anchoDisponible / columnas
+
+  const estilo = { top, height: alto, left: GUTTER_PX + columna * ancho, width: ancho }
 
   const contenido = (
     <>
-      <span
-        className="absolute top-0 bottom-0 left-0 w-1 rounded-bar"
+      <View
+        className="absolute bottom-0 left-0 top-0 w-1 rounded-bar"
         style={{
-          background: entrada.color ? courseColorVar(entrada.color) : 'var(--pm-border-strong)',
-          opacity: entrada.esRecurrente ? 'var(--pm-recurring-alpha)' : 1,
+          backgroundColor: entrada.color ? courseColor(entrada.color) : TOKENS.borderStrong,
+          opacity: entrada.esRecurrente ? RECURRING_ALPHA : 1,
         }}
       />
-      <span className="block truncate pl-3 text-meta text-ink-secondary">
+      <Text numberOfLines={1} className="pl-3 text-meta text-ink-secondary">
         {toHoraHHMM(entrada.inicioMin)}
-      </span>
-      <span className="block truncate pl-3 text-body">{entrada.titulo}</span>
+      </Text>
+      <Text numberOfLines={1} className="pl-3 text-body text-ink">
+        {entrada.titulo}
+      </Text>
     </>
   )
-
-  const estilo = {
-    top,
-    height: alto,
-    left: `calc(${GUTTER_PX}px + ${columna} * ${ancho})`,
-    width: ancho,
-  }
 
   // Commitments live in the timeline but are not edited from here.
   if (entrada.tipo === 'compromiso') {
     return (
-      <div
+      <View
         className="absolute overflow-hidden rounded-card bg-surface-muted pt-1"
         style={estilo}
       >
         {contenido}
-      </div>
+      </View>
     )
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => entrada.bloque && onEditar(entrada.bloque)}
-      className="absolute overflow-hidden rounded-card border border-border-hairline bg-surface-raised pt-1 text-left"
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => entrada.bloque && onEditar(entrada.bloque)}
+      className="absolute overflow-hidden rounded-card border border-border-hairline bg-surface-raised pt-1"
       style={estilo}
     >
       {contenido}
-    </button>
+    </Pressable>
   )
 }
 

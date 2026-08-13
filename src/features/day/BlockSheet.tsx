@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { Pressable, Text, TextInput, View } from 'react-native'
 import { BottomSheet } from '../../components/BottomSheet'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { TOKENS } from '../../design/tokens'
 import { formatDuracion, parseHoraCorta, toMinutos } from '../../lib/time'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import type { ISODate } from '../../model/types'
@@ -28,8 +30,7 @@ export function BlockSheet({
 
   const horaInicio = parseHoraCorta(inicio)
   const horaFin = parseHoraCorta(fin)
-  const duracion =
-    horaInicio && horaFin ? toMinutos(horaFin) - toMinutos(horaInicio) : null
+  const duracion = horaInicio && horaFin ? toMinutos(horaFin) - toMinutos(horaInicio) : null
 
   async function guardar() {
     if (titulo.trim() === '') return setError('Ponele un título.')
@@ -53,47 +54,48 @@ export function BlockSheet({
 
   return (
     <BottomSheet titulo={borrador.id ? 'Editar bloque' : 'Nuevo bloque'} onClose={onClose}>
-      <div className="flex flex-col gap-3 pt-1 pb-2">
-        <input
+      <View className="gap-3 pb-2 pt-1">
+        <TextInput
           value={titulo}
           autoFocus={titulo === ''}
-          onChange={(e) => {
-            setTitulo(e.target.value)
+          onChangeText={(texto) => {
+            setTitulo(texto)
             setError(null)
           }}
           placeholder="¿Qué vas a hacer?"
-          aria-label="Título del bloque"
-          className="min-h-[44px] w-full border-b border-border-hairline text-body outline-none placeholder:text-ink-tertiary"
+          placeholderTextColor={TOKENS.inkTertiary}
+          accessibilityLabel="Título del bloque"
+          className="min-h-[44px] border-b border-border-hairline text-body text-ink"
         />
 
-        <div className="flex items-center gap-3">
+        <View className="flex-row items-center gap-3">
           <CampoHora label="Desde" value={inicio} onChange={setInicio} />
           <CampoHora label="Hasta" value={fin} onChange={setFin} />
-          <span className="self-end pb-2 text-meta text-ink-tertiary">
+          <Text className="self-end pb-2 text-meta text-ink-tertiary">
             {duracion !== null && duracion > 0 ? formatDuracion(duracion) : '—'}
-          </span>
-        </div>
+          </Text>
+        </View>
 
-        {error && <p className="text-meta text-importance">{error}</p>}
+        {error && <Text className="text-meta text-importance">{error}</Text>}
 
-        <button
-          type="button"
-          onClick={() => void guardar()}
-          className="min-h-[44px] w-full rounded-card bg-accent text-body text-on-accent"
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void guardar()}
+          className="min-h-[44px] items-center justify-center rounded-card bg-accent"
         >
-          Guardar
-        </button>
+          <Text className="text-body text-on-accent">Guardar</Text>
+        </Pressable>
 
         {borrador.id && (
-          <button
-            type="button"
-            onClick={() => setConfirmando(true)}
-            className="min-h-[44px] w-full text-body text-importance"
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setConfirmando(true)}
+            className="min-h-[44px] items-center justify-center"
           >
-            Eliminar bloque
-          </button>
+            <Text className="text-body text-importance">Eliminar bloque</Text>
+          </Pressable>
         )}
-      </div>
+      </View>
 
       {confirmando && borrador.id && (
         <ConfirmDialog
@@ -120,17 +122,17 @@ function CampoHora({
   onChange: (value: string) => void
 }) {
   return (
-    <label className="flex flex-col">
-      <span className="text-meta text-ink-tertiary">{label}</span>
-      <input
+    <View>
+      <Text className="text-meta text-ink-tertiary">{label}</Text>
+      <TextInput
         value={value}
         inputMode="numeric"
-        onChange={(e) => onChange(e.target.value)}
-        aria-label={label}
-        className={`min-h-[44px] w-20 border-b border-border-hairline text-body outline-none ${
-          parseHoraCorta(value) === null ? 'text-importance' : ''
+        onChangeText={onChange}
+        accessibilityLabel={label}
+        className={`min-h-[44px] w-20 border-b border-border-hairline text-body ${
+          parseHoraCorta(value) === null ? 'text-importance' : 'text-ink'
         }`}
       />
-    </label>
+    </View>
   )
 }

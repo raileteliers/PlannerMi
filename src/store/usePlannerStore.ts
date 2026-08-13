@@ -9,7 +9,6 @@ import {
   type PlannerDB,
   type StoreName,
 } from '../db/schema'
-import { requestPersistentStorage } from '../db/persist'
 import {
   applyDeletePlan,
   planDeleteCompromiso,
@@ -84,7 +83,7 @@ const WRITE_ERROR = 'No se pudo guardar'
 export const usePlannerStore = create<PlannerState>()((set, get) => {
   /**
    * Write-through with rollback. The UI is updated first so it feels
-   * instant, and reverted if IndexedDB refuses — the screen never shows
+   * instant, and reverted if SQLite refuses — the screen never shows
    * something that was not saved.
    */
   async function commit(
@@ -157,8 +156,8 @@ export const usePlannerStore = create<PlannerState>()((set, get) => {
         db = await openPlannerDB()
         const data = await loadDataset(db)
         set({ data, status: 'ready', fatalError: null })
-        // Fire and forget: a refusal changes nothing the user can act on.
-        void requestPersistentStorage()
+        // No persistence request to make: on a device the database lives in
+        // the app's own storage, which only uninstalling clears.
       } catch (error) {
         console.error('[plannermi] could not open the database', error)
         set({ status: 'error', fatalError: 'No se pudo abrir la base de datos' })

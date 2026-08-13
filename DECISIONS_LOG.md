@@ -214,3 +214,48 @@ with the reason.
   the cell height is fixed by the no-scroll rule, so density had to come from finer marks.
 - **The palette screen documents the scale** at 1, 2, 3 and 4 items per day, since it is
   the one place the visual language can be checked at real size.
+
+## The move to Expo, on request
+
+- **Expo replaces the PWA rather than joining it.** One UI to maintain, and
+  testing happens where the app is actually used. The web version stays in
+  git history on `build/mvp`.
+- **`src/logic`, `src/lib`, `src/model` and the store crossed unchanged** —
+  about 1.400 lines, including all 110 tests. Keeping the core free of the DOM
+  was what made the port a rewrite of the surface only.
+- **SQLite stores each entity as JSON in `id`/`data`**, not a column per
+  field. Nothing in the app filters in SQL: the base is read once at startup
+  and every screen selects from memory. Columns would be a second copy of
+  `model/types.ts` to keep in sync for a query nobody makes. The transaction —
+  which the cascade delete and the import both need — works either way.
+- **NativeWind keeps the class names**, so `tokens.css` became
+  `tailwind.config.js` with the same utility names (`bg-surface`,
+  `text-importance`, `rounded-bar`). The palette is closed in the config:
+  a stray `bg-red-500` fails to compile rather than spending the importance
+  color.
+- **`src/design/tokens.ts` mirrors the config by hand** for the places that
+  need a color as a value — a bar tinted by its ramo, an SVG stroke. React
+  Native has no `var()`.
+- **`src/app/` had to be renamed `src/shell/`.** expo-router treats `src/app`
+  as a routes directory and had silently adopted it, which is why the first
+  build served two screens that do not exist.
+- **The month grid is flexbox, not CSS grid**, and the day timeline measures
+  its own width with `onLayout`: React Native has no `calc()`, so an entry's
+  lane is computed in pixels once the timeline knows how wide it is.
+- **Exporting opens the share sheet.** An app cannot drop a file into
+  Descargas unasked, and a backup that stays inside the app is not a backup.
+  Importing goes through the system document picker; the validation, the
+  counts-before-replacing confirm and the rejection reasons are untouched.
+- **Two blur-saves became explicit saves.** The new-ramo row and the inline
+  evaluación row used to save when the field lost focus, telling "tapped a
+  color" from "left the row" via `relatedTarget`. A phone has no such thing,
+  so both now save on the return key or the ↵ button — which is the same
+  decision the date field already took.
+- **The inline evaluación row derives "in use"** from whether anything is
+  typed or focused, instead of a container's `onFocus`/`onBlur`. React Native
+  does not bubble focus events.
+- **Escape no longer reverts an in-place edit**, because a phone keyboard has
+  no Escape. Nothing here destroys more than the one field being edited.
+- **`window.plannermi` became dev-only buttons in Ajustes.** The fixture is
+  the same shape as the end-to-end verification script, so checking a change
+  against a full month costs one tap instead of twenty minutes of typing.

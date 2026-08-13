@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { Text, View } from 'react-native'
+import { ColorChip } from '../../components/ColorChip'
 import { DateInput } from '../../components/DateInput'
-import { courseColorVar } from '../../design/palette'
 import { formatFechaCorta } from '../../lib/dateInput'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import { ramoById } from '../../store/selectors'
@@ -54,7 +55,7 @@ export function TareaForm({
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-1 pb-2">
+    <View className="gap-3 pb-2 pt-1">
       <CampoTitulo
         value={titulo}
         onChange={(v) => {
@@ -74,36 +75,29 @@ export function TareaForm({
       />
 
       {candidatas.length > 0 && (
-        <div>
-          <p className="text-meta text-ink-tertiary">¿Es para alguna evaluación?</p>
-          <div className="mt-1 flex flex-wrap gap-2" role="radiogroup" aria-label="Evaluación">
+        <View>
+          <Text className="text-meta text-ink-tertiary">¿Es para alguna evaluación?</Text>
+          <View
+            className="mt-1 flex-row flex-wrap gap-2"
+            accessibilityRole="radiogroup"
+            accessibilityLabel="Evaluación"
+          >
             {candidatas.map((evaluacion) => {
-              const ramo = ramoById(data, evaluacion.ramoId)
               const activo = evaluacion.id === evaluacionId
+              const ramo = ramoById(data, evaluacion.ramoId)
               return (
-                <button
+                <ColorChip
                   key={evaluacion.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={activo}
-                  onClick={() => setEvaluacionId(activo ? '' : evaluacion.id)}
-                  className={`flex min-h-[44px] items-center gap-2 rounded-card border px-3 text-meta ${
-                    activo ? 'border-ink' : 'border-border-strong text-ink-secondary'
-                  }`}
-                >
-                  <span
-                    className="h-4 w-1 rounded-bar"
-                    style={{
-                      background: ramo ? courseColorVar(ramo.color) : 'var(--pm-border-strong)',
-                    }}
-                  />
-                  {evaluacion.titulo}
-                  <span className="text-ink-tertiary">{formatFechaCorta(evaluacion.fecha)}</span>
-                </button>
+                  label={evaluacion.titulo}
+                  detalle={formatFechaCorta(evaluacion.fecha)}
+                  {...(ramo ? { color: ramo.color } : {})}
+                  activo={activo}
+                  onPress={() => setEvaluacionId(activo ? '' : evaluacion.id)}
+                />
               )
             })}
-          </div>
-        </div>
+          </View>
+        </View>
       )}
 
       <FormActions
@@ -116,6 +110,6 @@ export function TareaForm({
             }
           : {})}
       />
-    </div>
+    </View>
   )
 }
