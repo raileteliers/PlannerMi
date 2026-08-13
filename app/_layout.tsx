@@ -89,6 +89,11 @@ function AppShell() {
           active={pathname.startsWith('/ramos')}
           onPress={() => router.push('/ramos')}
         />
+        <Tab
+          label="Carga"
+          active={pathname.startsWith('/carga')}
+          onPress={() => router.push('/carga')}
+        />
       </View>
     </SafeAreaView>
   )

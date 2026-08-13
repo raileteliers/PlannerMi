@@ -259,3 +259,35 @@ with the reason.
 - **`window.plannermi` became dev-only buttons in Ajustes.** The fixture is
   the same shape as the end-to-end verification script, so checking a change
   against a full month costs one tap instead of twenty minutes of typing.
+
+## The carga screen, on request
+
+- **A fourth tab, against §3 of `DESIGN.md`**, which fixed the bottom bar at
+  three. Asked and confirmed: the tabs go from 33% to 25% of the width each.
+  Worth watching on a 390px screen — if "Carga" crowds the others, moving it
+  behind Ramos costs one line.
+- **Weight is a product, not a sum**: importance × difficulty × closeness.
+  Adding them would let three easy controls next month outrank a hard exam
+  next week, which is the exact question the screen exists to answer.
+- **Difficulty comes from the tipo** — examen 3, prueba 2, control 1.5,
+  entrega 1 — so nothing new has to be filled in and every evaluación already
+  loaded counts from day one. The cost is that it cannot tell an easy prueba
+  from a brutal one in the same ramo; if that starts to bite, a `dificultad`
+  field next to `importancia` is the fix, and the model, the import/export
+  and three forms would all have to learn it.
+- **Closeness decays continuously**, halving every 7 days, instead of a fixed
+  window. The order drifts a little each day rather than jumping when
+  something crosses a boundary — a list that reorders itself overnight is a
+  list you stop trusting.
+- **Today counts as day zero**, not as past: an evaluación is ahead of you
+  until the day is over.
+- **Ramos with nothing ahead stay in the list**, scoring zero, sorted
+  alphabetically among themselves. "Nothing due" is an answer, and hiding
+  them would make the screen lie about how many ramos you have.
+- **The number is never shown.** It has no unit and no meaning on its own;
+  only the comparison does, so the bar is drawn as a fraction of the heaviest
+  ramo and the score stays out of the interface.
+- **No track behind the bar.** An empty ramo shows nothing rather than an
+  empty container, the same way an empty day in the month has no bars.
+- **Red still means only high importance**, here on the "en N días" label
+  when the next evaluación is alta. It is not spent on the bars.
