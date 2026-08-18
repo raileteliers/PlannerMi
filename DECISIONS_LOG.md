@@ -291,3 +291,31 @@ with the reason.
   empty container, the same way an empty day in the month has no bars.
 - **Red still means only high importance**, here on the "en N días" label
   when the next evaluación is alta. It is not spent on the bars.
+
+## Notifications, on request
+
+`DESIGN.md` §6 listed notifications as an explicit non-goal and the model kept
+`Compromiso.recordatorioMin?` reserved for them. They are in now, so both notes
+were removed from the design doc rather than left contradicting the code.
+
+- **An hour before compromisos and bloques, a week before evaluaciones**, as
+  asked. The week is the useful distance for something you have to study for;
+  an hour is the useful distance for something you have to walk to.
+- **9am for anything with no time of day.** Evaluaciones carry only a `fecha`,
+  and compromisos may have no `hora`. 9am is early enough that the day is still
+  open and late enough not to wake anyone.
+- **The schedule is derived from the dataset, not fired from events.** A hook
+  watches `data` and rebuilds the whole schedule 1.5s after it settles. Every
+  edit — create, delete, import, cascade — lands in `data`, so no call site has
+  to remember to notify and no stale reminder can survive an edit.
+- **Cancel-everything-and-rebuild instead of diffing.** A few hundred entries
+  make the diff not worth its bugs, and ids are stable (`evaluacion:<id>`,
+  `compromiso:<id>:<fecha>`, `bloque:<id>`) so rebuilding is idempotent.
+- **A 90-day horizon and a 400-notification cap.** Android caps pending alarms
+  around 500; a daily recurring compromiso would otherwise spend the budget.
+  Recurrences are expanded through the existing `expandCompromisos`, never
+  materialized, so the notification code inherits `excepciones` and `hasta`.
+- **Archived ramos do not notify.** Archiving already means "out of sight".
+- **The decision of what to notify is a pure function** (`src/logic/notifications.ts`,
+  `avisosDe`), so it is tested in node like the rest of `src/logic`. The phone
+  side only asks for permission and schedules what it returns.

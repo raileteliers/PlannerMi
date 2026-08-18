@@ -17,6 +17,23 @@ describe('parseFechaCorta', () => {
     expect(parseFechaCorta('12-9', hoy)).toBe('2026-09-12')
     expect(parseFechaCorta('12.9', hoy)).toBe('2026-09-12')
     expect(parseFechaCorta('12 9', hoy)).toBe('2026-09-12')
+    // What the Android number pad gives you in a Spanish locale.
+    expect(parseFechaCorta('12,9', hoy)).toBe('2026-09-12')
+    expect(parseFechaCorta('12,9,27', hoy)).toBe('2027-09-12')
+  })
+
+  it('accepts digits with no separator, which is all Android lets you type', () => {
+    expect(parseFechaCorta('1209', hoy)).toBe('2026-09-12')
+    expect(parseFechaCorta('0504', hoy)).toBe('2026-04-05')
+    expect(parseFechaCorta('120927', hoy)).toBe('2027-09-12')
+    expect(parseFechaCorta('12092027', hoy)).toBe('2027-09-12')
+  })
+
+  it('refuses digit runs it would have to guess at', () => {
+    expect(parseFechaCorta('112', hoy)).toBeNull() // 1/12 or 11/2?
+    expect(parseFechaCorta('12', hoy)).toBeNull()
+    expect(parseFechaCorta('12345', hoy)).toBeNull()
+    expect(parseFechaCorta('1232', hoy)).toBeNull() // month 32
   })
 
   it('accepts an explicit four-digit year', () => {

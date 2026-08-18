@@ -331,7 +331,6 @@ el contenido en blanco mientras se abre la base. Algo que tarde más de 150ms es
 **El MVP deliberadamente NO hace:**
 
 - Notas, ponderaciones ni promedios. La importancia es un campo manual.
-- Notificaciones. La app no suena ni avisa; hay que abrirla.
 - Sync entre dispositivos, cuentas, backend.
 - Editar una ocurrencia individual de una serie recurrente (cancelarla sí, moverla no).
 - Recurrencias complejas tipo "el tercer martes del mes" (RRULE con `BYSETPOS`).
@@ -341,8 +340,6 @@ el contenido en blanco mientras se abre la base. Algo que tarde más de 150ms es
 
 **Backlog (v2):**
 
-- **Notificaciones push locales** — que el teléfono avise antes de un compromiso; requiere
-  service worker y permisos.
 - **APK vía Capacitor** — empaquetar la misma app web como app nativa Android. El código no
   cambia; los datos no viajan solos, y por eso el export/import está en el MVP.
 - **Editar una ocurrencia individual de una serie recurrente** — requiere materializar
@@ -409,7 +406,6 @@ el contenido en blanco mientras se abre la base. Algo que tarde más de 150ms es
 
 ## Backlog (v2)
 
-- **Notificaciones push locales** — que el teléfono avise antes de un compromiso; requiere service worker y permisos
 - **APK vía Capacitor** — empaquetar la misma app web como app nativa Android
 - **Editar una ocurrencia individual de una serie recurrente** — requiere materializar ocurrencias
 - **Drag para mover bloques** — arrastrar un bloque existente a otra hora en la vista día

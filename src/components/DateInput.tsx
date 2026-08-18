@@ -16,7 +16,9 @@ export function DateInput({
   value,
   onChange,
   label,
-  placeholder = '12/9',
+  // Digits, no separator: the placeholder has to show something the Android
+  // number pad can actually produce. "12/9" still parses on any other keyboard.
+  placeholder = '1209',
   opcional = false,
 }: {
   value: ISODate | null
@@ -35,7 +37,9 @@ export function DateInput({
       <Text className="text-meta text-ink-tertiary">{label}</Text>
       <TextInput
         value={texto}
-        inputMode="numeric"
+        // "numeric" is a bare digit pad on Android — no way to type a separator
+        // at all. "decimal" keeps the pad and adds the locale's decimal key.
+        inputMode="decimal"
         placeholder={placeholder}
         placeholderTextColor={TOKENS.inkTertiary}
         accessibilityLabel={label}

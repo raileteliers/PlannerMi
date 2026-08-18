@@ -7,13 +7,23 @@ import { parseISODate, toISODate, type ISODate } from './date'
  * calendar next to you. A native date picker costs three taps each; this
  * takes "12/9" and Enter.
  *
- * Accepts d/m, d/m/yy, d/m/yyyy with / - . or space as separator.
+ * Accepts d/m, d/m/yy, d/m/yyyy with / - . , or space as separator, and the
+ * same date with no separator at all: "1209", "120927", "12092027".
+ *
+ * The separator-less form is the one that matters on Android, where the number
+ * pad shows a decimal key but the field filters it out — there is no way to
+ * type a separator. It mirrors what parseHoraCorta already does with "1930".
  */
 export function parseFechaCorta(input: string, hoy = new Date()): ISODate | null {
   const limpio = input.trim()
   if (limpio === '') return null
 
-  const partes = limpio.split(/[/\-. ]+/).filter((p) => p !== '')
+  let partes = limpio.split(/[/\-., ]+/).filter((p) => p !== '')
+  if (partes.length === 1) {
+    const expandido = expandirCompacto(partes[0] as string)
+    if (expandido === null) return null
+    partes = expandido
+  }
   if (partes.length < 2 || partes.length > 3) return null
   if (partes.some((p) => !/^\d{1,4}$/.test(p))) return null
 
@@ -29,6 +39,21 @@ export function parseFechaCorta(input: string, hoy = new Date()): ISODate | null
   if (fecha.getDate() !== dia || fecha.getMonth() !== mes - 1) return null
 
   return toISODate(fecha)
+}
+
+/**
+ * Splits "1209" into ['12', '09']. Both day and month must be two digits: at
+ * three digits "112" could be 1/12 or 11/2 with nothing to choose between them,
+ * so it is refused rather than guessed at.
+ */
+function expandirCompacto(solo: string): string[] | null {
+  if (!/^\d+$/.test(solo)) return null
+  const dia = solo.slice(0, 2)
+  const mes = solo.slice(2, 4)
+
+  if (solo.length === 4) return [dia, mes]
+  if (solo.length === 6 || solo.length === 8) return [dia, mes, solo.slice(4)]
+  return null
 }
 
 /**

@@ -27,6 +27,17 @@ import {
 } from '../../src/model/types'
 import { IMPORTANCIA_LABEL, TIPO_LABEL } from '../../src/design/labels'
 
+/**
+ * A fixed-size box with centred text needs all three of these on Android, or
+ * the digits sit off-centre: the EditText brings its own padding, and
+ * includeFontPadding pads the line asymmetrically above and below.
+ */
+const CAJA_FECHA = {
+  padding: 0,
+  includeFontPadding: false,
+  textAlignVertical: 'center',
+} as const
+
 export default function CourseDetailPage() {
   const { id = '' } = useLocalSearchParams<{ id?: string }>()
   const data = usePlannerStore((s) => s.data)
@@ -418,7 +429,8 @@ function NuevaEvaluacionRow({ ramoId, autoFocus }: { ramoId: string; autoFocus: 
         <TextInput
           ref={fechaRef}
           value={fechaTexto}
-          inputMode="numeric"
+          // "numeric" is a bare digit pad on Android: no separator key at all.
+          inputMode="decimal"
           onChangeText={(texto) => {
             setFechaTexto(texto)
             setError(false)
@@ -428,9 +440,10 @@ function NuevaEvaluacionRow({ ramoId, autoFocus }: { ramoId: string; autoFocus: 
           onSubmitEditing={() => void guardar()}
           submitBehavior="submit"
           returnKeyType="done"
-          placeholder="12/9"
+          placeholder="1209"
           placeholderTextColor={TOKENS.inkTertiary}
           accessibilityLabel="Fecha de la nueva evaluación"
+          style={CAJA_FECHA}
           className={`h-11 w-16 rounded-card border text-center text-body ${
             error ? 'border-importance text-importance' : 'border-border-strong text-ink'
           }`}
@@ -537,9 +550,10 @@ function CampoFecha({ value, onSave }: { value: string; onSave: (fecha: string) 
   return (
     <TextInput
       value={editando ? texto : formatFechaEditable(value)}
-      inputMode="numeric"
+      inputMode="decimal"
       accessibilityLabel="Fecha"
       returnKeyType="done"
+      style={CAJA_FECHA}
       className={`h-11 w-16 rounded-card border text-center text-body ${
         error ? 'border-importance text-importance' : 'border-border-strong text-ink'
       }`}

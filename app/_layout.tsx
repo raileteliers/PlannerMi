@@ -9,6 +9,7 @@ import Svg, { Circle, Path } from 'react-native-svg'
 
 import { DatabaseErrorScreen } from '../src/shell/DatabaseErrorScreen'
 import { useStartDatabase } from '../src/shell/useStartDatabase'
+import { useAvisos } from '../src/shell/useAvisos'
 import { Toast } from '../src/components/Toast'
 import { CreateFab } from '../src/features/create/CreateFab'
 import { TOKENS } from '../src/design/tokens'
@@ -33,6 +34,7 @@ function AppShell() {
   const fatalError = usePlannerStore((s) => s.fatalError)
   const status = usePlannerStore((s) => s.status)
   useStartDatabase()
+  useAvisos()
 
   if (fatalError) {
     return (
