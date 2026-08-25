@@ -52,10 +52,15 @@ module.exports = {
     // `bg-red-500` should fail loudly rather than spend the importance color.
     colors: { transparent: 'transparent', ...colors },
     // Three sizes, no more: screen titles, content, metadata.
+    //
+    // In `rem`, not `px`, against a base of 14 — the sizes below are the old
+    // 20/15/12px divided by it. Metro passes `inlineRem: false`, so the base
+    // stays a runtime value and `src/design/typeScale.ts` moves all three at
+    // once to fit the screen the app is actually on.
     fontSize: {
-      title: ['20px', { lineHeight: '26px' }],
-      body: ['15px', { lineHeight: '20px' }],
-      meta: ['12px', { lineHeight: '16px' }],
+      title: ['1.4286rem', { lineHeight: '1.8571rem' }], // 20 / 26 at base 14
+      body: ['1.0714rem', { lineHeight: '1.4286rem' }], //  15 / 20 at base 14
+      meta: ['0.8571rem', { lineHeight: '1.1429rem' }], //  12 / 16 at base 14
     },
     extend: {
       borderRadius: {

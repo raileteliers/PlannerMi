@@ -13,10 +13,15 @@ import { useAvisos } from '../src/shell/useAvisos'
 import { Toast } from '../src/components/Toast'
 import { CreateFab } from '../src/features/create/CreateFab'
 import { TOKENS } from '../src/design/tokens'
+import { useTypeScale } from '../src/design/typeScale'
 import { todayISO } from '../src/lib/date'
 import { usePlannerStore } from '../src/store/usePlannerStore'
 
 export default function RootLayout() {
+  // Before anything renders: the type scale has to match the screen from the
+  // first frame, not after a resize.
+  useTypeScale()
+
   return (
     <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
