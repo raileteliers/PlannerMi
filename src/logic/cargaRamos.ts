@@ -45,14 +45,24 @@ export const pesoEvaluacion = (evaluacion: Evaluacion, diasFaltantes: number): n
   DIFICULTAD[evaluacion.tipo] *
   proximidad(diasFaltantes)
 
+/** One evaluación and what it contributes, so the screen can show the parts. */
+export interface PesoEvaluacion {
+  evaluacion: Evaluacion
+  /** Calendar days from today. Zero is today; never negative. */
+  dias: number
+  peso: number
+}
+
 export interface CargaRamo {
   ramo: Ramo
   /** Unbounded: only ever compared against the other ramos on screen. */
   puntaje: number
-  /** The soonest one still ahead, which is what the row names. */
-  proxima?: Evaluacion
-  diasHastaProxima?: number
-  pendientes: number
+  /**
+   * Everything still ahead, soonest first. The collapsed row reads the first
+   * one; expanding shows all of them. `puntaje` is exactly the sum of their
+   * `peso`, which is what lets the expanded bars add up to the ramo's own.
+   */
+  desglose: PesoEvaluacion[]
 }
 
 /**
@@ -70,35 +80,18 @@ export function cargaDeRamos(data: Dataset, hoy: ISODate = todayISO()): CargaRam
     .filter((ramo) => !ramo.archivado)
     .map((ramo): CargaRamo => {
       // Today counts: an evaluación is ahead of you until the day is over.
-      const pendientes = data.evaluaciones
+      const desglose = data.evaluaciones
         .filter((e) => e.ramoId === ramo.id && e.fecha >= hoy)
         .sort((a, b) => a.fecha.localeCompare(b.fecha))
-
-      const puntaje = pendientes.reduce(
-        (total, evaluacion) =>
-          total +
-          pesoEvaluacion(
-            evaluacion,
-            differenceInCalendarDays(parseISODate(evaluacion.fecha), hoyDate),
-          ),
-        0,
-      )
-
-      const proxima = pendientes[0]
+        .map((evaluacion): PesoEvaluacion => {
+          const dias = differenceInCalendarDays(parseISODate(evaluacion.fecha), hoyDate)
+          return { evaluacion, dias, peso: pesoEvaluacion(evaluacion, dias) }
+        })
 
       return {
         ramo,
-        puntaje,
-        pendientes: pendientes.length,
-        ...(proxima
-          ? {
-              proxima,
-              diasHastaProxima: differenceInCalendarDays(
-                parseISODate(proxima.fecha),
-                hoyDate,
-              ),
-            }
-          : {}),
+        puntaje: desglose.reduce((total, parte) => total + parte.peso, 0),
+        desglose,
       }
     })
 

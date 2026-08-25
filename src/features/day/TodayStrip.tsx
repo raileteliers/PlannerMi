@@ -1,11 +1,12 @@
+import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
-import { Checkbox } from '../../components/Checkbox'
 import { CATEGORY_COLOR, CATEGORY_LABEL, courseColor } from '../../design/palette'
 import { RECURRING_ALPHA, TOKENS } from '../../design/tokens'
 import type { FranjaSuperior } from '../../logic/dayTimeline'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import { ramoById } from '../../store/selectors'
 import type { RefTipo } from '../../model/types'
+import { PendientesSheet } from './PendientesSheet'
 
 export interface PedidoAgendar {
   titulo: string
@@ -15,6 +16,10 @@ export interface PedidoAgendar {
 /**
  * The *what* half of the day: everything with no hour of its own. Every row
  * offers "Agendar", which is how something without a time gets one.
+ *
+ * The tareas are not rows here — they are a list that grows without a ceiling,
+ * and the room they took came out of the timeline, which is the half you came
+ * to the screen for. They live one tap away, behind "Pendientes".
  */
 export function TodayStrip({
   franja,
@@ -24,7 +29,9 @@ export function TodayStrip({
   onAgendar: (pedido: PedidoAgendar) => void
 }) {
   const data = usePlannerStore((s) => s.data)
-  const updateTarea = usePlannerStore((s) => s.updateTarea)
+  const [viendoPendientes, setViendoPendientes] = useState(false)
+
+  const porHacer = franja.tareas.filter((t) => !t.hecha).length
 
   return (
     <View className="border-b border-border-hairline pb-2">
@@ -64,30 +71,29 @@ export function TodayStrip({
         />
       ))}
 
-      {franja.tareas.map((tarea) => (
-        <View key={tarea.id} className="flex-row items-center gap-2">
-          <Checkbox
-            label={tarea.titulo}
-            checked={tarea.hecha}
-            onChange={(hecha) => void updateTarea(tarea.id, { hecha })}
-          />
-          <Text
-            numberOfLines={1}
-            className={`min-h-[44px] flex-1 text-body ${
-              tarea.hecha ? 'text-ink-tertiary line-through' : 'text-ink'
-            }`}
-          >
-            {tarea.titulo}
+      {/* Only when the day has any: a button for an empty list is a button
+          that teaches you to ignore it. */}
+      {franja.tareas.length > 0 && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Pendientes, ${porHacer} por hacer`}
+          onPress={() => setViendoPendientes(true)}
+          className="mt-1 min-h-[44px] flex-row items-center justify-between rounded-card border border-border-strong px-3"
+        >
+          <Text className="text-body text-ink">Pendientes</Text>
+          <Text className="text-meta text-ink-tertiary">
+            {porHacer === 0 ? 'todo hecho' : porHacer}
           </Text>
-          {!tarea.hecha && (
-            <BotonAgendar
-              onPress={() =>
-                onAgendar({ titulo: tarea.titulo, ref: { tipo: 'tarea', id: tarea.id } })
-              }
-            />
-          )}
-        </View>
-      ))}
+        </Pressable>
+      )}
+
+      {viendoPendientes && (
+        <PendientesSheet
+          tareas={franja.tareas}
+          onAgendar={onAgendar}
+          onClose={() => setViendoPendientes(false)}
+        />
+      )}
     </View>
   )
 }

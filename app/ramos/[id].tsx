@@ -219,6 +219,14 @@ function EvaluacionEditor({ evaluacion }: { evaluacion: Evaluacion }) {
   return (
     <View className="pb-4 pl-24">
       <View className="gap-3">
+        {/* The collapsed row shows the title; here is where it changes. */}
+        <CampoTexto
+          value={evaluacion.titulo}
+          onSave={(titulo) => void updateEvaluacion(evaluacion.id, { titulo })}
+          className="min-h-[44px] text-body text-ink"
+          label="Título de la evaluación"
+          requerido
+        />
         <ChipGroup
           label="Tipo"
           value={evaluacion.tipo}
@@ -301,14 +309,15 @@ function TareasDeEvaluacion({ evaluacionId }: { evaluacionId: string }) {
             checked={tarea.hecha}
             onChange={(hecha) => void updateTarea(tarea.id, { hecha })}
           />
-          <Text
-            numberOfLines={1}
+          <CampoTexto
+            value={tarea.titulo}
+            onSave={(titulo) => void updateTarea(tarea.id, { titulo })}
             className={`min-h-[44px] flex-1 text-body ${
               tarea.hecha ? 'text-ink-tertiary line-through' : 'text-ink'
             }`}
-          >
-            {tarea.titulo}
-          </Text>
+            label={`Título de la tarea ${tarea.titulo}`}
+            requerido
+          />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Eliminar tarea ${tarea.titulo}`}
@@ -499,6 +508,10 @@ function NuevaEvaluacionRow({ ramoId, autoFocus }: { ramoId: string; autoFocus: 
  * The web version also reverted on Escape. A phone keyboard has no Escape,
  * so the way back from a bad edit is to type the old value again — which is
  * why nothing here destroys more than the one field being edited.
+ *
+ * `requerido` is for the fields that name something: leaving one empty puts
+ * the old name back instead of saving a blank, because a row with no name is
+ * a row you can no longer find.
  */
 function CampoTexto({
   value,
@@ -506,12 +519,14 @@ function CampoTexto({
   className,
   placeholder,
   label,
+  requerido = false,
 }: {
   value: string
   onSave: (value: string) => void
   className: string
   placeholder?: string
   label: string
+  requerido?: boolean
 }) {
   const [texto, setTexto] = useState(value)
   const [editando, setEditando] = useState(false)
@@ -535,6 +550,7 @@ function CampoTexto({
       onBlur={() => {
         setEditando(false)
         const limpio = texto.trim()
+        if (requerido && limpio === '') return
         if (limpio !== value) onSave(limpio)
       }}
     />

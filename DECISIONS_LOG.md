@@ -375,3 +375,25 @@ funcionando sin internet.
   toca el repo.
 - **`baseUrl: "/PlannerMi"` está escrito a mano** en `app.json`. Si el repo se
   renombra o pasa a un dominio propio, hay que cambiarlo o todo da 404.
+
+## Fase 11 — Tres arreglos de uso
+
+- **La barra de Carga se abre en sus partes.** Cada evaluación se mide contra el
+  mismo máximo que los ramos, así las partes suman exactamente la barra de
+  arriba en vez de ser una escala nueva que hay que aprender. El desglose va por
+  fecha y no por peso: es una agenda, no un segundo ranking.
+- **Varios ramos abiertos a la vez, no un acordeón.** La pantalla existe para
+  comparar; abrir uno no puede cerrar aquel contra el que lo estabas comparando.
+  Un ramo con una sola evaluación no se despliega: la fila ya la nombra.
+- **`CampoTexto` distingue campos obligatorios.** El título de una evaluación o
+  de una tarea vuelve al anterior si se deja vacío; la descripción y la sigla
+  siguen aceptando vacío, que ahí significa "sacala". Una fila sin nombre es una
+  fila que no volvés a encontrar.
+- **Las tareas del día salieron de la tira y viven detrás de "Pendientes".** La
+  lista crece sin techo y el alto que ocupaba salía del timeline, que es la mitad
+  a la que se viene. El botón aparece solo si el día tiene tareas.
+- **Las evaluaciones y los compromisos sin hora se quedan como filas.** No son un
+  to-do list: son lo que pasa hoy, y una interrogación en rojo es exactamente lo
+  que no puede estar detrás de un botón.
+- **"Agendar" desde Pendientes cierra la hoja antes de abrir la del bloque.** Dos
+  hojas encimadas son dos cosas flotando, y acá flota una sola.

@@ -105,7 +105,7 @@ describe('cargaDeRamos', () => {
 
     const [primero] = cargaDeRamos(data, HOY)
     expect(primero?.ramo.id).toBe('R1')
-    expect(primero?.pendientes).toBe(3)
+    expect(primero?.desglose).toHaveLength(3)
   })
 
   it('lo mismo pesa menos cuanto más lejos está', () => {
@@ -125,7 +125,7 @@ describe('cargaDeRamos', () => {
 
     const [primero] = cargaDeRamos(data, HOY)
     expect(primero?.puntaje).toBe(0)
-    expect(primero?.pendientes).toBe(0)
+    expect(primero?.desglose).toEqual([])
   })
 
   it('cuenta lo de hoy: el día todavía no termina', () => {
@@ -133,8 +133,8 @@ describe('cargaDeRamos', () => {
     data.evaluaciones = [evaluacion({ id: 'E1', fecha: HOY })]
 
     const [primero] = cargaDeRamos(data, HOY)
-    expect(primero?.pendientes).toBe(1)
-    expect(primero?.diasHastaProxima).toBe(0)
+    expect(primero?.desglose).toHaveLength(1)
+    expect(primero?.desglose[0]?.dias).toBe(0)
   })
 
   it('deja fuera los ramos archivados', () => {
@@ -156,16 +156,41 @@ describe('cargaDeRamos', () => {
     expect(carga.map((c) => c.ramo.nombre)).toEqual(['Física', 'Álgebra', 'Cálculo'])
   })
 
-  it('nombra la próxima evaluación, no una cualquiera', () => {
+  it('desglosa en partes que suman el puntaje del ramo', () => {
     const data = vacio()
     data.evaluaciones = [
-      evaluacion({ id: 'E1', ramoId: 'R1', titulo: 'Lejana', fecha: '2026-04-01' }),
+      evaluacion({ id: 'E1', ramoId: 'R1', fecha: '2026-03-12' }),
+      evaluacion({ id: 'E2', ramoId: 'R1', tipo: 'examen', fecha: '2026-03-20' }),
+    ]
+
+    const [primero] = cargaDeRamos(data, HOY)
+    const suma = primero?.desglose.reduce((total, parte) => total + parte.peso, 0) ?? 0
+    expect(suma).toBeCloseTo(primero?.puntaje ?? 0)
+  })
+
+  it('ordena el desglose por fecha, no por peso', () => {
+    const data = vacio()
+    data.evaluaciones = [
+      // El examen pesa mucho más, pero llega después: el desglose es una
+      // agenda, no un ranking.
+      evaluacion({
+        id: 'E1',
+        ramoId: 'R1',
+        titulo: 'Pesada',
+        tipo: 'examen',
+        importancia: 'alta',
+        fecha: '2026-03-15',
+      }),
       evaluacion({ id: 'E2', ramoId: 'R1', titulo: 'Cercana', fecha: '2026-03-13' }),
     ]
 
     const [primero] = cargaDeRamos(data, HOY)
-    expect(primero?.proxima?.titulo).toBe('Cercana')
-    expect(primero?.diasHastaProxima).toBe(3)
+    expect(primero?.desglose.map((p) => p.evaluacion.titulo)).toEqual([
+      'Cercana',
+      'Pesada',
+    ])
+    expect(primero?.desglose[0]?.dias).toBe(3)
+    expect(primero?.desglose[1]?.peso).toBeGreaterThan(primero?.desglose[0]?.peso ?? 0)
   })
 })
 

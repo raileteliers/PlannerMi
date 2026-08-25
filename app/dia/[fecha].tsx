@@ -95,6 +95,9 @@ export default function DayPage() {
         {/* Empty strip collapses: no placeholder, no empty box. */}
         {!franjaVacia(franja) && (
           <TodayStrip
+            // Keyed by date, so Pendientes never stays open from the day
+            // before while showing another day's list.
+            key={fecha}
             franja={franja}
             onAgendar={(pedido: PedidoAgendar) =>
               setBorrador(borradorNuevo(slotSugerido(entradas), pedido.titulo, pedido.ref))
