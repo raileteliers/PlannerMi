@@ -397,3 +397,46 @@ funcionando sin internet.
   que no puede estar detrás de un botón.
 - **"Agendar" desde Pendientes cierra la hoja antes de abrir la del bloque.** Dos
   hojas encimadas son dos cosas flotando, y acá flota una sola.
+
+## Fase 12 — Vista semana
+
+- **La semana entra al MVP, contra lo que decía §6.** El mes contesta "cuánto
+  tengo encima" y el día contesta "a qué hora"; entre los dos faltaba "qué
+  muevo a dónde", que es la pregunta que uno se hace el domingo. La barra del
+  mes no la contesta porque una barra no tiene título, y el día tampoco porque
+  no se ve el jueves desde el martes.
+- **Siete filas, no siete columnas.** En un teléfono una columna mide 50px, y un
+  título de tarea en 50px no es un título de tarea. Sobre 760px de ancho las
+  mismas filas se ponen lado a lado, que es donde siete columnas por fin caben.
+- **La semana ordena por hora; el mes ordena por peso.** No es una inconsistencia
+  sino la misma regla en dos contextos: el mes dibuja barras, que no tienen hora
+  que mostrar, y lo único que las distingue es cuánto pesan. La semana escribe
+  títulos, y un título con hora es un horario. Lo que no tiene hora se va al
+  fondo del día.
+- **La tarea se marca ahí mismo.** Revisar la semana y cerrar lo que ya está
+  hecho es un solo gesto; obligar a pasar por la hoja del día lo parte en dos.
+  Tocar el día sigue abriendo la misma `DaySheet` del mes — la vista nueva no
+  trae una forma nueva de editar.
+- **Las tareas sin fecha van en su propia tira, arriba.** Son de la lista, no
+  de ningún día: meterlas en el lunes por no tener dónde ponerlas sería
+  inventarles una fecha. La tira es el montón del que se reparte la semana, y
+  por eso está arriba y no abajo.
+- **La tira se pliega en dos, con el caret y no con un "+".** Sin plegar, un
+  montón largo empuja el lunes fuera de la pantalla cada vez que se abre la
+  semana, y la semana es a lo que se viene. El "+" no sirve de marca acá: en
+  esta app es el botón que crea cosas, y está flotando en esta misma pantalla.
+  El caret ya es la marca de "hay más debajo" en Carga.
+- **Las hechas se hunden solas.** Vienen ordenadas pendientes primero, así que
+  una tarea suelta ya marcada cae bajo el corte de dos sin ninguna regla que la
+  esconda — y sigue ahí para desmarcarla.
+- **El conteo del encabezado no las suma.** Cuenta lo que cae en la semana; el
+  montón suelto tiene su propia tira. Un número que significa dos cosas no
+  significa ninguna.
+- **La casilla cierra la tarea, el título la abre.** Es la misma partición que
+  ya hace la hoja del día. Poder abrirla es lo que convierte la pantalla en una
+  forma de organizar en vez de una lista: una tarea suelta consigue su día en
+  el formulario que hay detrás.
+- **`TareaForm` dejó de prellenar la fecha del contexto al editar.** Hacía
+  `existente?.fecha ?? fechaInicial`, así que abrir una tarea sin fecha y
+  guardar le ponía una sola. No se notaba porque las sin fecha nunca llegaban a
+  un formulario; la tira las hizo llegar.

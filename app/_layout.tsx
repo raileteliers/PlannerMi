@@ -87,6 +87,13 @@ function AppShell() {
       <View className="shrink-0 flex-row border-t border-border-hairline">
         <Tab label="Mes" active={pathname.startsWith('/mes')} onPress={() => router.push('/mes')} />
         <Tab
+          label="Semana"
+          active={pathname.startsWith('/semana')}
+          onPress={() =>
+            router.push({ pathname: '/semana/[fecha]', params: { fecha: todayISO() } })
+          }
+        />
+        <Tab
           label="Hoy"
           active={pathname.startsWith('/dia')}
           onPress={() => router.push({ pathname: '/dia/[fecha]', params: { fecha: todayISO() } })}

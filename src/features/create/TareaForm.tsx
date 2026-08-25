@@ -24,7 +24,12 @@ export function TareaForm({
   const deleteTarea = usePlannerStore((s) => s.deleteTarea)
 
   const [titulo, setTitulo] = useState(existente?.titulo ?? '')
-  const [fecha, setFecha] = useState<ISODate | null>(existente?.fecha ?? fechaInicial)
+  // An existing task shows its own date, and a task without one shows none:
+  // falling back to the context date here would let "abrir para mirar" plus
+  // "Guardar" put a date on something that deliberately had none.
+  const [fecha, setFecha] = useState<ISODate | null>(
+    existente ? (existente.fecha ?? null) : fechaInicial,
+  )
   const [evaluacionId, setEvaluacionId] = useState(existente?.evaluacionId ?? '')
   const [error, setError] = useState<string | null>(null)
 

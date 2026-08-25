@@ -85,6 +85,9 @@ export interface DatedItem {
   importancia: Importancia
   esRecurrente: boolean
   origen: 'evaluacion' | 'compromiso'
+  /** Only commitments have one, and only some of them. The month ignores it;
+      the week orders the day by it. */
+  hora?: HoraHHMM
 }
 
 /** The whole database, in memory. Hundreds of records, not thousands. */

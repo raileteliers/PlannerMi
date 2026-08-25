@@ -336,7 +336,8 @@ el contenido en blanco mientras se abre la base. Algo que tarde más de 150ms es
 - Recurrencias complejas tipo "el tercer martes del mes" (RRULE con `BYSETPOS`).
 - Drag para crear o mover bloques de tiempo.
 - Tema oscuro.
-- Vista semana, vista agenda, búsqueda, etiquetas, adjuntos.
+- Vista agenda, búsqueda, etiquetas, adjuntos.
+- ~~Vista semana~~ — entró en la fase 12; ver el registro de decisiones.
 
 **Backlog (v2):**
 

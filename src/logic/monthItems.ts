@@ -65,6 +65,7 @@ export function datedItemsEnRango(data: Dataset, range: DateRange): DatedItem[] 
         importancia: compromiso.importancia,
         esRecurrente: compromiso.recurrencia !== undefined,
         origen: 'compromiso',
+        ...(compromiso.hora ? { hora: compromiso.hora } : {}),
       }),
     ),
   )
