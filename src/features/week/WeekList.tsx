@@ -14,8 +14,15 @@ import { reordenar } from '../../logic/taskOrder'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import type { Tarea } from '../../model/types'
 
-/** The height of a task row, which the drag needs as a number. */
-const ALTURA_TAREA_PX = 36
+/**
+ * The height of a task row, which the drag needs as a number to work out where
+ * a drop landed.
+ *
+ * 44 and not 36: the drag grip carries the app's usual 44px touch target, and
+ * that is what actually sets the row's height. A number here that disagrees
+ * with the rendered row silently lands every drop one row short.
+ */
+const ALTURA_TAREA_PX = 44
 
 /**
  * Only the pending ones can be dragged.
@@ -275,7 +282,7 @@ function TareaFila({ tarea, onEditar }: { tarea: Tarea; onEditar: (tarea: Tarea)
   const updateTarea = usePlannerStore((s) => s.updateTarea)
 
   return (
-    <View className="min-h-[36px] flex-row items-center">
+    <View className="min-h-[44px] flex-row items-center">
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: tarea.hecha }}

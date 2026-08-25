@@ -1,33 +1,26 @@
-import { type ReactNode } from 'react'
-import { View } from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated'
+import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { Animated, PanResponder, Platform, View, type ViewStyle } from 'react-native'
 import Svg, { Circle } from 'react-native-svg'
 
 import { TOKENS } from '../design/tokens'
 import { indiceDestino } from '../logic/taskOrder'
 
-const SIN_ARRASTRE = -1
-
-const FILA = { flexDirection: 'row', alignItems: 'center' } as const
-
 /**
  * A list whose rows can be dragged into a different order.
  *
- * Rows are a fixed height, given rather than measured: measuring means a
- * layout pass per row before the first drag can be resolved, and every list
- * that uses this has rows of one line by construction.
+ * Built on PanResponder rather than react-native-gesture-handler. The gesture
+ * handler version activated from synthetic events and did nothing under a real
+ * mouse inside a ScrollView on the web — and the web is where this app is
+ * actually used. PanResponder is React Native Web's own responder system: it
+ * claims the touch on press, which is exactly the contract a drag handle wants.
  *
- * The drag starts on a grip and nowhere else. A whole-row drag would have to
- * out-argue two gestures this app already uses on the same pixels — the
- * vertical scroll, and the horizontal swipe that changes week — and a grip
- * costs one glyph instead.
+ * It runs on the JS thread, so this is not the silkiest possible drag. These
+ * lists are a handful of rows; correctness on every platform is worth more here
+ * than a frame.
+ *
+ * Rows are a fixed height, given rather than measured: measuring costs a layout
+ * pass per row before the first drag can be resolved, and every list that uses
+ * this has rows of one line by construction.
  */
 export function DragList<T extends { id: string }>({
   items,
@@ -40,11 +33,10 @@ export function DragList<T extends { id: string }>({
   onReordenar: (desde: number, hasta: number) => void
   renderItem: (item: T) => ReactNode
 }) {
-  // Which row is being dragged, and how far it has travelled. Shared values
-  // rather than state: this runs per frame, and per-frame React state would
-  // re-render the whole list on every pixel.
-  const activo = useSharedValue(SIN_ARRASTRE)
-  const desplazamiento = useSharedValue(0)
+  // Which row is in hand and where it would land. Only changes when the target
+  // row changes, not on every pixel, so a drag costs a few renders and not one
+  // per frame.
+  const [arrastre, setArrastre] = useState<{ desde: number; hasta: number } | null>(null)
 
   return (
     <View>
@@ -54,8 +46,8 @@ export function DragList<T extends { id: string }>({
           indice={indice}
           total={items.length}
           alturaFila={alturaFila}
-          activo={activo}
-          desplazamiento={desplazamiento}
+          arrastre={arrastre}
+          setArrastre={setArrastre}
           onReordenar={onReordenar}
         >
           {renderItem(item)}
@@ -69,84 +61,110 @@ function Fila({
   indice,
   total,
   alturaFila,
-  activo,
-  desplazamiento,
+  arrastre,
+  setArrastre,
   onReordenar,
   children,
 }: {
   indice: number
   total: number
   alturaFila: number
-  activo: SharedValue<number>
-  desplazamiento: SharedValue<number>
+  arrastre: { desde: number; hasta: number } | null
+  setArrastre: (a: { desde: number; hasta: number } | null) => void
   onReordenar: (desde: number, hasta: number) => void
   children: ReactNode
 }) {
-  const arrastre = Gesture.Pan()
-    // Vertical only. Letting go sideways hands the movement back to the swipe
-    // that changes week, instead of both trying to own it.
-    .activeOffsetY([-4, 4])
-    .failOffsetX([-14, 14])
-    .onStart(() => {
-      activo.value = indice
-      desplazamiento.value = 0
-    })
-    .onUpdate((e) => {
-      desplazamiento.value = e.translationY
-    })
-    .onEnd(() => {
-      const hasta = indiceDestino(indice, desplazamiento.value, alturaFila, total)
-      if (hasta !== indice) runOnJS(onReordenar)(indice, hasta)
-    })
-    // Also on cancel: a drag interrupted by a call or a back gesture has to put
-    // the row down, or it stays lifted with nothing holding it.
-    .onFinalize(() => {
-      activo.value = SIN_ARRASTRE
-      desplazamiento.value = 0
-    })
+  const offset = useRef(new Animated.Value(0)).current
 
-  const estilo = useAnimatedStyle(() => {
-    if (activo.value === SIN_ARRASTRE) return { transform: [{ translateY: 0 }], zIndex: 0 }
+  // Built once. A PanResponder rebuilt mid-gesture drops the gesture already
+  // in flight, and `indice` is stable for the life of a row's key.
+  const responder = useMemo(
+    () =>
+      PanResponder.create({
+        // Claimed on press, before any movement: that is what stops the
+        // surrounding scroll from taking the drag away.
+        onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
 
-    // The row in hand follows the finger and rides above the rest.
-    if (activo.value === indice) {
-      return {
-        transform: [{ translateY: desplazamiento.value }],
-        zIndex: 2,
-        opacity: 0.9,
-      }
-    }
+        onPanResponderGrant: () => {
+          offset.setValue(0)
+          setArrastre({ desde: indice, hasta: indice })
+        },
 
-    // Everyone else opens a gap where the row is heading, so the list shows
-    // the order it would end up in rather than the order it has.
-    const destino = indiceDestino(activo.value, desplazamiento.value, alturaFila, total)
-    const sube = activo.value < indice && destino >= indice
-    const baja = activo.value > indice && destino <= indice
-    const salto = sube ? -alturaFila : baja ? alturaFila : 0
+        onPanResponderMove: (_e, gesto) => {
+          offset.setValue(gesto.dy)
+          setArrastre({
+            desde: indice,
+            hasta: indiceDestino(indice, gesto.dy, alturaFila, total),
+          })
+        },
 
-    return {
-      transform: [{ translateY: withTiming(salto, { duration: 120 }) }],
-      zIndex: 0,
-    }
-  })
+        onPanResponderRelease: (_e, gesto) => {
+          const hasta = indiceDestino(indice, gesto.dy, alturaFila, total)
+          offset.setValue(0)
+          setArrastre(null)
+          if (hasta !== indice) onReordenar(indice, hasta)
+        },
+
+        // A drag cut short — a call, a back gesture — still has to put the row
+        // down, or it stays lifted with nothing holding it.
+        onPanResponderTerminate: () => {
+          offset.setValue(0)
+          setArrastre(null)
+        },
+      }),
+    [indice, total, alturaFila, offset, setArrastre, onReordenar],
+  )
+
+  const enMano = arrastre?.desde === indice
+
+  // Everyone else opens a gap where the row is heading, so the list shows the
+  // order it would end up in rather than the order it has.
+  let salto = 0
+  if (arrastre && !enMano) {
+    if (arrastre.desde < indice && arrastre.hasta >= indice) salto = -alturaFila
+    else if (arrastre.desde > indice && arrastre.hasta <= indice) salto = alturaFila
+  }
 
   return (
-    // Styled through `style` and not `className`: NativeWind does not wrap
-    // Reanimated's Animated.View, so a className here is silently dropped and
-    // the row falls back to a column with the grip stacked on top.
-    <Animated.View style={[estilo, FILA]}>
-      <GestureDetector gesture={arrastre}>
-        <View
-          accessibilityRole="adjustable"
-          accessibilityLabel="Arrastrar para reordenar"
-          className="h-9 w-6 items-center justify-center"
-        >
-          <Grip />
-        </View>
-      </GestureDetector>
+    <Animated.View
+      style={[
+        FILA,
+        enMano
+          ? { transform: [{ translateY: offset }], zIndex: 2, opacity: 0.9 }
+          : { transform: [{ translateY: salto }], zIndex: 0 },
+      ]}
+    >
+      <View
+        {...responder.panHandlers}
+        accessibilityRole="adjustable"
+        accessibilityLabel="Arrastrar para reordenar"
+        // A 44px target around a 10px mark: the grip has to be catchable with a
+        // thumb, and the drawing has to stay small enough to be a hint.
+        style={AGARRE}
+      >
+        <Grip />
+      </View>
       <View className="min-w-0 flex-1">{children}</View>
     </Animated.View>
   )
+}
+
+// Plain styles, not classNames: NativeWind does not wrap Animated.View, so a
+// className there is dropped in silence and the row falls back to a column.
+const FILA = { flexDirection: 'row', alignItems: 'center' } as const
+
+const AGARRE: ViewStyle = {
+  width: 28,
+  minHeight: 44,
+  alignItems: 'center',
+  justifyContent: 'center',
+  // Only the web has a pointer to change, and there it is the whole affordance.
+  // React Native Web renders `grab` fine; React Native's own types only admit
+  // `auto` and `pointer`, so the value is cast rather than downgraded.
+  ...Platform.select({ web: { cursor: 'grab' } as unknown as ViewStyle, default: {} }),
 }
 
 /** Six dots. The one shape that reads as "this can be picked up". */
