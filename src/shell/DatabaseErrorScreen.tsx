@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
+import { createStorage } from '../db'
+import { useSession } from '../auth/useSession'
 import { todayISO } from '../lib/date'
 import { shareJSON } from '../lib/files'
 import { usePlannerStore } from '../store/usePlannerStore'
 
 /** The only error that takes the whole screen. Everything else is a toast. */
 export function DatabaseErrorScreen({ message }: { message: string }) {
+  const { session } = useSession()
   const data = usePlannerStore((s) => s.data)
   const buildExportFile = usePlannerStore((s) => s.buildExportFile)
   const [exportando, setExportando] = useState(false)
@@ -37,7 +40,7 @@ export function DatabaseErrorScreen({ message }: { message: string }) {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => void usePlannerStore.getState().start()}
+        onPress={() => void usePlannerStore.getState().start(() => createStorage(session))}
         className="min-h-[44px] justify-center rounded-card bg-accent px-6"
       >
         <Text className="text-body text-on-accent">Reintentar</Text>

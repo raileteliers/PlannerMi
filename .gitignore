@@ -23,6 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
+# Local secrets. `*.local` above already covers .env.local; .env is spelled
+# out so a stray one cannot be committed either.
+.env
+.env.*
+!.env.example
+
 # Expo
 .expo
 expo-env.d.ts

@@ -24,13 +24,20 @@
       "bundleIdentifier": "com.plannermi.app",
       "supportsTablet": false
     },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/icon.png"
+    },
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-web-browser"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/PlannerMi"
     },
     "extra": {
       "router": {},

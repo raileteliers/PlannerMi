@@ -319,3 +319,59 @@ were removed from the design doc rather than left contradicting the code.
 - **The decision of what to notify is a pure function** (`src/logic/notifications.ts`,
   `avisosDe`), so it is tested in node like the rest of `src/logic`. The phone
   side only asks for permission and schedules what it returns.
+
+## Fase 10 — La web en GitHub Pages y la base compartida
+
+El pedido: que la app viviera también en una página de GitHub Pages y que
+hubiera una base de datos de verdad, guardando la información con la misma
+forma que los JSON de siempre. Y, preguntado, que el teléfono siguiera
+funcionando sin internet.
+
+- **Un solo código, no una web aparte.** La app ya está en React Native, así
+  que la web es el target que Expo ya sabe generar (`react-native-web`), no una
+  reescritura. La rama `build/mvp` quedó como lo que fue: el punto de partida.
+- **GitHub Pages no puede alojar la base.** Sirve archivos estáticos y no deja
+  poner cabeceras. De ahí sale todo lo demás: la base tiene que ser un servicio
+  al que la página le habla, y `expo-sqlite` **no puede** correr en la web
+  (necesita `SharedArrayBuffer` sobre OPFS, que exige COOP/COEP). Si algún día
+  hiciera falta persistencia en el navegador sin cuenta, la salida es IndexedDB
+  como otra implementación de `PlannerStorage`, no SQLite.
+- **`output: 'single'` y no `'static'`.** Las rutas son dinámicas (`dia/[fecha]`,
+  `ramos/[id]`), así que el pre-render igual necesitaría el fallback, y el árbol
+  mide la pantalla en el primer frame — pre-renderizarlo sin `window` es pedir
+  errores de hidratación. El fallback es copiar `index.html` a `404.html`, que
+  es como un host estático sirve una SPA.
+- **`.nojekyll` es obligatorio.** Sin él, Jekyll descarta `dist/_expo/` y la
+  página carga sin nada de JavaScript, sin un error que lo delate.
+- **Una sola tabla `records`, no cinco espejo.** El mismo argumento que ya
+  justificaba las cinco tablas idénticas de SQLite: nadie filtra en SQL. Cinco
+  tablas en Postgres serían veinte políticas de RLS y una migración de DDL por
+  cada entidad nueva. La integridad referencial se queda en `src/logic/cascade.ts`,
+  porque el teléfono la aplica sin red.
+- **`data` sigue siendo exactamente lo que dice `model/types.ts`.** Sin `user_id`
+  adentro, sin validación de esquema en Postgres. Así el JSON exportado es
+  intercambiable entre SQLite y Supabase, y `importExport.ts` sigue siendo el
+  único que valida.
+- **Las dos operaciones atómicas son funciones plpgsql.** Un `apply_delete_plan`
+  hecho de varios requests podría dejar el ramo borrado y sus evaluaciones
+  vivas, un estado que la app nunca tuvo que manejar. Una llamada a función en
+  Postgres es una transacción.
+- **La identidad es la cuenta de GitHub.** Es la que el usuario ya tiene, y
+  ahorra que la app toque una contraseña nunca.
+- **El teléfono escribe local primero y empuja después.** Cada escritura entra a
+  SQLite y al `outbox` en la misma transacción — "guardado pero no encolado" no
+  puede pasar. Firmar sesión agrega sincronización sin quitar la app offline.
+- **Gana el que sincroniza último.** Se empuja antes de traer, así lo escrito
+  acá ya está arriba cuando se pregunta qué cambió. Dos dispositivos editando lo
+  mismo estando ambos sin red es el único caso en que una edición se pisa en
+  silencio; `updated_at` queda por si alguna vez hay que detectarlo.
+- **El primer sync sube lo que ya había.** Lo que estaba en el teléfono se
+  escribió con el outbox apagado, así que nada lo describiría: al enlazar por
+  primera vez se sube todo como `put`s. Es una unión, no una toma: los ids son
+  aleatorios y no chocan.
+- **La anon key es pública y está bien.** Va literal en el bundle, que es lo que
+  significa `EXPO_PUBLIC_`. Identifica al proyecto, no autoriza nada: lo que
+  separa los datos de una persona de los de otra es RLS. La `service_role` no
+  toca el repo.
+- **`baseUrl: "/PlannerMi"` está escrito a mano** en `app.json`. Si el repo se
+  renombra o pasa a un dominio propio, hay que cambiarlo o todo da 404.

@@ -1,14 +1,5 @@
 import { create } from 'zustand'
-import {
-  applyDeletePlanToDB,
-  deleteRecord,
-  loadDataset,
-  openPlannerDB,
-  putRecord,
-  replaceDataset,
-  type PlannerDB,
-  type StoreName,
-} from '../db/schema'
+import type { PlannerStorage, StoreName } from '../db/storage'
 import {
   applyDeletePlan,
   planDeleteCompromiso,
@@ -45,7 +36,11 @@ interface PlannerState {
   writeError: string | null
   data: Dataset
 
-  start: () => Promise<void>
+  /** Takes a factory, not a storage: opening is what can fail. Which one it
+   *  opens is decided outside — see `src/db/index.ts`. */
+  start: (open: () => Promise<PlannerStorage>) => Promise<void>
+  /** Re-read the base. What a sync pull calls once it has written. */
+  reload: () => Promise<void>
   dismissWriteError: () => void
 
   createRamo: (nuevo: New<Ramo>) => Promise<Ramo | null>
@@ -76,7 +71,7 @@ interface PlannerState {
 }
 
 /** Held outside the store: it is a connection, not state to render. */
-let db: PlannerDB | null = null
+let storage: PlannerStorage | null = null
 
 const WRITE_ERROR = 'No se pudo guardar'
 
@@ -88,16 +83,16 @@ export const usePlannerStore = create<PlannerState>()((set, get) => {
    */
   async function commit(
     next: Dataset,
-    persist: (db: PlannerDB) => Promise<void>,
+    persist: (storage: PlannerStorage) => Promise<void>,
   ): Promise<boolean> {
-    if (!db) {
+    if (!storage) {
       set({ writeError: WRITE_ERROR })
       return false
     }
     const previous = get().data
     set({ data: next, writeError: null })
     try {
-      await persist(db)
+      await persist(storage)
       return true
     } catch (error) {
       console.error('[plannermi] write failed', error)
@@ -114,7 +109,7 @@ export const usePlannerStore = create<PlannerState>()((set, get) => {
       const entity = { ...values, id: newId() } as Dataset[K][number]
       const data = get().data
       const next = { ...data, [collection]: [...data[collection], entity] } as Dataset
-      const ok = await commit(next, (db) => putRecord(db, store, entity as never))
+      const ok = await commit(next, (s) => s.put(store, entity as never))
       return ok ? entity : null
     }
   }
@@ -131,7 +126,7 @@ export const usePlannerStore = create<PlannerState>()((set, get) => {
         ...data,
         [collection]: list.map((item) => (item.id === id ? updated : item)),
       } as Dataset
-      return commit(next, (db) => putRecord(db, store, updated as never))
+      return commit(next, (s) => s.put(store, updated as never))
     }
   }
 
@@ -142,7 +137,7 @@ export const usePlannerStore = create<PlannerState>()((set, get) => {
     const updatedBloques = next.bloques.filter((b) =>
       plan.bloquesDesvinculados.some((original) => original.id === b.id),
     )
-    return commit(next, (db) => applyDeletePlanToDB(db, plan, updatedBloques))
+    return commit(next, (s) => s.applyDeletePlan(plan, updatedBloques))
   }
 
   return {
@@ -151,16 +146,30 @@ export const usePlannerStore = create<PlannerState>()((set, get) => {
     writeError: null,
     data: emptyDataset(),
 
-    async start() {
+    async start(open) {
       try {
-        db = await openPlannerDB()
-        const data = await loadDataset(db)
+        // Signing in or out opens a different database; the one being replaced
+        // is told, so it can stop whatever it had running.
+        storage?.cerrar?.()
+        storage = await open()
+        const data = await storage.load()
         set({ data, status: 'ready', fatalError: null })
         // No persistence request to make: on a device the database lives in
         // the app's own storage, which only uninstalling clears.
       } catch (error) {
         console.error('[plannermi] could not open the database', error)
         set({ status: 'error', fatalError: 'No se pudo abrir la base de datos' })
+      }
+    },
+
+    async reload() {
+      if (!storage) return
+      try {
+        set({ data: await storage.load() })
+      } catch (error) {
+        // A failed reload is not fatal: what is on screen is still what is
+        // saved locally, only without whatever the other device just added.
+        console.error('[plannermi] reload failed', error)
       }
     },
 
@@ -189,14 +198,14 @@ export const usePlannerStore = create<PlannerState>()((set, get) => {
     async deleteBloque(id) {
       const data = get().data
       const next = { ...data, bloques: data.bloques.filter((b) => b.id !== id) }
-      return commit(next, (db) => deleteRecord(db, 'bloques', id))
+      return commit(next, (s) => s.remove('bloques', id))
     },
 
-    replaceAll: (data) => commit(data, (db) => replaceDataset(db, data)),
+    replaceAll: (data) => commit(data, (s) => s.replaceDataset(data)),
 
     buildExportFile: () => buildExport(get().data),
   }
 })
 
 /** For the dev console and for tests that need the raw handle. */
-export const getDB = (): PlannerDB | null => db
+export const getStorage = (): PlannerStorage | null => storage

@@ -1,0 +1,65 @@
+# Builds the web export and publishes it to GitHub Pages.
+#
+# The site lives at https://raileteliers.github.io/PlannerMi/, a subpath, which
+# is why `experiments.baseUrl` in app.json is "/PlannerMi". Renaming the repo
+# means changing both.
+name: Deploy web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and never cancel one halfway: a partial upload would
+# leave the site broken until the next push.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # The gate: a red test does not reach the site.
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+      # `build:web` exports and then writes two files Pages needs that the
+      # export does not produce:
+      #  - .nojekyll, or Jekyll drops every _expo/ directory and the page loads
+      #    with no JavaScript at all, and without an error to show for it.
+      #  - 404.html, which is how a static host serves a single-page app: a deep
+      #    link like dia/2026-08-24 falls back to it and the router takes over.
+      - run: npm run build:web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

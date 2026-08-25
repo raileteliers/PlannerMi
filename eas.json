@@ -10,7 +10,11 @@
       },
       "autoIncrement": true,
       "distribution": "internal",
-      "channel": "apk"
+      "channel": "apk",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://cnaszvvztihnujccritf.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_4Ms5HNenyNhJBeq2JzsnQQ_EwiYH1e2"
+      }
     }
   }
 }
