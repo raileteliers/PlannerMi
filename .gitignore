@@ -29,6 +29,11 @@ dist-ssr
 .env.*
 !.env.example
 
+# Data backups. `Exportar JSON` writes plannermi-YYYY-MM-DD.json and it holds
+# real ramos, evaluaciones and tareas. This repo is public: one of these
+# committed by accident is personal data published to the world.
+plannermi-*.json
+
 # Expo
 .expo
 expo-env.d.ts
