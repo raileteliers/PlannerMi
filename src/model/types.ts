@@ -59,6 +59,15 @@ export interface Tarea {
   /** Optional: undated tasks exist. */
   fecha?: ISODate
   hecha: boolean
+  /**
+   * Where you dragged it. One number per task, not one per list: every list of
+   * tasks is a filtered subset of all of them, so a single relative order reads
+   * the same everywhere and cannot contradict itself.
+   *
+   * Absent on a task never dragged — those keep sorting alphabetically, after
+   * the ones that were placed by hand.
+   */
+  orden?: number
 }
 
 export type RefTipo = 'evaluacion' | 'compromiso' | 'tarea'

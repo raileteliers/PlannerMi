@@ -10,6 +10,7 @@ import {
 } from '../logic/cascade'
 import { buildExport, type ExportFile } from '../logic/importExport'
 import { newId } from '../lib/id'
+import type { CambioDeOrden } from '../logic/taskOrder'
 import {
   emptyDataset,
   type BloqueTiempo,
@@ -60,6 +61,8 @@ interface PlannerState {
   createTarea: (nueva: New<Tarea>) => Promise<Tarea | null>
   updateTarea: (id: string, changes: Changes<Tarea>) => Promise<boolean>
   deleteTarea: (id: string) => Promise<boolean>
+  /** A drop: every task the move renumbered, written as one change. */
+  reordenarTareas: (cambios: CambioDeOrden[]) => Promise<boolean>
 
   createBloque: (nuevo: New<BloqueTiempo>) => Promise<BloqueTiempo | null>
   updateBloque: (id: string, changes: Changes<BloqueTiempo>) => Promise<boolean>
@@ -192,6 +195,33 @@ export const usePlannerStore = create<PlannerState>()((set, get) => {
     createTarea: makeCreate('tareas', 'tareas'),
     updateTarea: makeUpdate('tareas', 'tareas'),
     deleteTarea: (id) => deleteWithPlan(planDeleteTarea(get().data, id)),
+
+    /**
+     * One commit for the whole drop, not one per task. A drag can renumber a
+     * dozen rows, and a dozen separate writes means a dozen chances to fail
+     * halfway and leave the list in an order nobody asked for.
+     */
+    async reordenarTareas(cambios) {
+      if (cambios.length === 0) return true
+
+      const data = get().data
+      const orden = new Map(cambios.map((c) => [c.id, c.orden]))
+      const tocadas = data.tareas.flatMap((tarea) => {
+        const nuevo = orden.get(tarea.id)
+        return nuevo === undefined ? [] : [{ ...tarea, orden: nuevo }]
+      })
+      if (tocadas.length === 0) return true
+
+      const porId = new Map(tocadas.map((t) => [t.id, t]))
+      const next = {
+        ...data,
+        tareas: data.tareas.map((t) => porId.get(t.id) ?? t),
+      }
+
+      return commit(next, async (s) => {
+        for (const tarea of tocadas) await s.put('tareas', tarea)
+      })
+    },
 
     createBloque: makeCreate('bloques', 'bloques'),
     updateBloque: makeUpdate('bloques', 'bloques'),

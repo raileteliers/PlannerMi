@@ -5,12 +5,61 @@ import { Pressable, ScrollView, Text, View } from 'react-native'
 
 import { Caret } from '../../components/Caret'
 import { Checkbox } from '../../components/Checkbox'
+import { DragList } from '../../components/DragList'
 import { courseColor } from '../../design/palette'
 import { RECURRING_ALPHA } from '../../design/tokens'
 import { parseISODate, type ISODate } from '../../lib/date'
 import { SIN_FECHA_VISIBLES, diaVacio, type DiaDeSemana } from '../../logic/weekItems'
+import { reordenar } from '../../logic/taskOrder'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import type { Tarea } from '../../model/types'
+
+/** The height of a task row, which the drag needs as a number. */
+const ALTURA_TAREA_PX = 36
+
+/**
+ * Only the pending ones can be dragged.
+ *
+ * Done tasks sort below every pending one, so a row dropped past them would
+ * spring back the moment it landed — the list would be arguing with the drop
+ * instead of obeying it.
+ */
+function TareasArrastrables({
+  tareas,
+  onEditar,
+}: {
+  tareas: Tarea[]
+  onEditar: (tarea: Tarea) => void
+}) {
+  const reordenarTareas = usePlannerStore((s) => s.reordenarTareas)
+  const pendientes = tareas.filter((t) => !t.hecha)
+  const hechas = tareas.filter((t) => t.hecha)
+
+  return (
+    <>
+      {pendientes.length > 1 ? (
+        <DragList
+          items={pendientes}
+          alturaFila={ALTURA_TAREA_PX}
+          onReordenar={(desde, hasta) =>
+            void reordenarTareas(reordenar(pendientes, desde, hasta))
+          }
+          renderItem={(tarea) => <TareaFila tarea={tarea} onEditar={onEditar} />}
+        />
+      ) : (
+        // A single task has nowhere to go: the grip would be a control that
+        // does nothing, which is worse than no control.
+        pendientes.map((tarea) => (
+          <TareaFila key={tarea.id} tarea={tarea} onEditar={onEditar} />
+        ))
+      )}
+
+      {hechas.map((tarea) => (
+        <TareaFila key={tarea.id} tarea={tarea} onEditar={onEditar} />
+      ))}
+    </>
+  )
+}
 
 /**
  * The week as seven stacked days, each one carrying what is scheduled and
@@ -113,9 +162,7 @@ function SinFechaStrip({
     <View className="border-b border-border-hairline px-2 py-2">
       <Text className="text-meta uppercase text-ink-tertiary">Sin fecha</Text>
 
-      {visibles.map((tarea) => (
-        <TareaFila key={tarea.id} tarea={tarea} onEditar={onEditar} />
-      ))}
+      <TareasArrastrables tareas={visibles} onEditar={onEditar} />
 
       {(ocultas > 0 || abierto) && (
         <Pressable
@@ -210,9 +257,7 @@ function DiaFila({
         </Pressable>
       ))}
 
-      {dia.tareas.map((tarea) => (
-        <TareaFila key={tarea.id} tarea={tarea} onEditar={onEditarTarea} />
-      ))}
+      <TareasArrastrables tareas={dia.tareas} onEditar={onEditarTarea} />
     </View>
   )
 }

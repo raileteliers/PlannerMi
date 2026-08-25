@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale'
 import { parseISODate, toISODate, type ISODate } from '../lib/date'
 import type { Dataset, DatedItem, Tarea } from '../model/types'
 import { datedItemsEnRango, tareasDelDia } from './monthItems'
+import { compararTareas } from './taskOrder'
 
 /** Monday first, the way a Chilean calendar reads. Same as the month grid. */
 const WEEK_OPTIONS = { weekStartsOn: 1 } as const
@@ -75,11 +76,7 @@ const porHora = (a: DatedItem, b: DatedItem): number =>
 export const tareasSinFecha = (data: Dataset): Tarea[] =>
   data.tareas
     .filter((t) => t.fecha === undefined)
-    .sort((a, b) =>
-      a.hecha === b.hecha
-        ? a.titulo.localeCompare(b.titulo, 'es')
-        : Number(a.hecha) - Number(b.hecha),
-    )
+    .sort(compararTareas)
 
 /** How many of them the strip shows before it has to be opened. */
 export const SIN_FECHA_VISIBLES = 2

@@ -9,6 +9,7 @@ import type {
   Tarea,
 } from '../model/types'
 import { expandCompromiso, type DateRange } from './recurrence'
+import { compararTareas } from './taskOrder'
 
 /** The grid never shows more than this many bars in one cell. */
 export const MAX_BARRAS = 4
@@ -116,8 +117,4 @@ export const tieneImportanciaAlta = (items: DatedItem[]): boolean =>
 export const tareasDelDia = (data: Dataset, fecha: ISODate): Tarea[] =>
   data.tareas
     .filter((t) => t.fecha === fecha)
-    .sort((a, b) =>
-      a.hecha === b.hecha
-        ? a.titulo.localeCompare(b.titulo, 'es')
-        : Number(a.hecha) - Number(b.hecha),
-    )
+    .sort(compararTareas)

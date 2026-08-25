@@ -1,5 +1,6 @@
 import { todayISO } from '../lib/date'
 import type { Dataset, Evaluacion, Ramo, Tarea } from '../model/types'
+import { compararTareas } from '../logic/taskOrder'
 
 /**
  * Alphabetical, because SQLite hands rows back in primary-key order and the
@@ -34,11 +35,7 @@ export const pendientesDeRamo = (
 export const tareasDeEvaluacion = (data: Dataset, evaluacionId: string): Tarea[] =>
   data.tareas
     .filter((t) => t.evaluacionId === evaluacionId)
-    .sort((a, b) =>
-      a.hecha === b.hecha
-        ? a.titulo.localeCompare(b.titulo, 'es')
-        : Number(a.hecha) - Number(b.hecha),
-    )
+    .sort(compararTareas)
 
 /** The next unused color, so four ramos in a row never repeat. */
 export function siguienteColorLibre<T extends string>(

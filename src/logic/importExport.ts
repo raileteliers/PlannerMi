@@ -211,6 +211,7 @@ function parseTarea(raw: unknown, i: number, errores: string[]): Tarea | null {
       : { evaluacionId: reqId(o.evaluacionId, `${where}.evaluacionId`, errores) }),
     ...(o.fecha === undefined ? {} : { fecha: reqDate(o.fecha, `${where}.fecha`, errores) }),
     hecha: reqBool(o.hecha, `${where}.hecha`, errores),
+    ...(o.orden === undefined ? {} : { orden: reqNumber(o.orden, `${where}.orden`, errores) }),
   }
 }
 

@@ -4,6 +4,7 @@ import { toMinutos } from '../lib/time'
 import type { BloqueTiempo, Compromiso, Dataset, Evaluacion, Tarea } from '../model/types'
 import { expandCompromiso } from './recurrence'
 import { ramoById } from '../store/selectors'
+import { compararTareas } from './taskOrder'
 
 /** 07:00 to 23:00 in 30-minute slots. A bet, per DESIGN.md §7. */
 export const TIMELINE_INICIO_MIN = 7 * 60
@@ -156,11 +157,7 @@ export function franjaSuperior(data: Dataset, fecha: ISODate): FranjaSuperior {
       .sort((a, b) => a.titulo.localeCompare(b.titulo, 'es')),
     tareas: data.tareas
       .filter((t) => t.fecha === fecha)
-      .sort((a, b) =>
-        a.hecha === b.hecha
-          ? a.titulo.localeCompare(b.titulo, 'es')
-          : Number(a.hecha) - Number(b.hecha),
-      ),
+      .sort(compararTareas),
     compromisosSinHora: data.compromisos.filter(
       (c) => c.hora === undefined && expandCompromiso(c, { desde: fecha, hasta: fecha }).length > 0,
     ),
