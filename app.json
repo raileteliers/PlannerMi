@@ -18,7 +18,10 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.USE_EXACT_ALARM"
-      ]
+      ],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.plannermi.app",
@@ -45,6 +48,9 @@
         "projectId": "00bad216-c8e8-423a-aa8f-4efa2cea76f0"
       }
     },
-    "owner": "raileteliers"
+    "owner": "raileteliers",
+    "updates": {
+      "url": "https://u.expo.dev/00bad216-c8e8-423a-aa8f-4efa2cea76f0"
+    }
   }
 }
