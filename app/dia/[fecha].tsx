@@ -27,8 +27,11 @@ const SWIPE_MIN_PX = 50
 
 /** Deciding when you do what. Split in two: the what on top, the when below. */
 export default function DayPage() {
-  const params = useLocalSearchParams<{ fecha?: string }>()
+  const params = useLocalSearchParams<{ fecha?: string; pendientes?: string }>()
   const fecha = (params.fecha ?? todayISO()) as ISODate
+  // Arrived from the month's "Pendientes": open the list rather than making
+  // the same request twice.
+  const abrirPendientes = params.pendientes === '1'
   const data = usePlannerStore((s) => s.data)
   const router = useRouter()
   const [borrador, setBorrador] = useState<BloqueBorrador | null>(null)
@@ -99,6 +102,7 @@ export default function DayPage() {
             // before while showing another day's list.
             key={fecha}
             franja={franja}
+            abrirPendientes={abrirPendientes}
             onAgendar={(pedido: PedidoAgendar) =>
               setBorrador(borradorNuevo(slotSugerido(entradas), pedido.titulo, pedido.ref))
             }

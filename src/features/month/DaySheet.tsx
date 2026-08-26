@@ -23,6 +23,15 @@ import { CompromisoForm } from '../create/CompromisoForm'
 import { TareaForm } from '../create/TareaForm'
 import type { Compromiso, Evaluacion, Tarea } from '../../model/types'
 
+/**
+ * How many tasks the sheet shows before it stops listing them.
+ *
+ * Past this the sheet stops being a glance at the day and turns into a to-do
+ * list with a day's worth of other things stuck on top of it. The rest live
+ * behind "Pendientes", on the screen built for working through them.
+ */
+const TAREAS_VISIBLES = 2
+
 const TITULO_EDITAR = {
   evaluacion: 'Editar evaluación',
   compromiso: 'Editar compromiso',
@@ -50,6 +59,19 @@ export function DaySheet({ fecha, onClose }: { fecha: ISODate; onClose: () => vo
     .sort((a, b) => (a.hora ?? '99:99').localeCompare(b.hora ?? '99:99'))
 
   const tareas = tareasDelDia(data, fecha)
+  const tareasVisibles = tareas.slice(0, TAREAS_VISIBLES)
+  const porHacer = tareas.filter((t) => !t.hecha).length
+  const hayDeMas = tareas.length > TAREAS_VISIBLES
+
+  // Both buttons land on the same screen; this one asks for the list to be
+  // open when it gets there.
+  const irAlDia = (pendientes: boolean) => {
+    onClose()
+    router.push({
+      pathname: '/dia/[fecha]',
+      params: { fecha, ...(pendientes ? { pendientes: '1' } : {}) },
+    })
+  }
   const vacio = evaluaciones.length === 0 && compromisos.length === 0 && tareas.length === 0
   const titulo = format(parseISODate(fecha), "EEEE d 'de' MMMM", { locale: es })
 
@@ -120,7 +142,7 @@ export function DaySheet({ fecha, onClose }: { fecha: ISODate; onClose: () => vo
             />
           ))}
 
-          {tareas.map((tarea) => (
+          {tareasVisibles.map((tarea) => (
             <View key={tarea.id} className="flex-row items-center gap-2">
               <Checkbox
                 label={tarea.titulo}
@@ -143,15 +165,26 @@ export function DaySheet({ fecha, onClose }: { fecha: ISODate; onClose: () => vo
               </Pressable>
             </View>
           ))}
+
+          {hayDeMas && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Pendientes, ${porHacer} por hacer`}
+              onPress={() => irAlDia(true)}
+              className="mt-1 min-h-[44px] flex-row items-center justify-between rounded-card border border-border-strong px-3"
+            >
+              <Text className="text-body text-ink">Pendientes</Text>
+              <Text className="text-meta text-ink-tertiary">
+                {porHacer === 0 ? 'todo hecho' : porHacer}
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => {
-          onClose()
-          router.push({ pathname: '/dia/[fecha]', params: { fecha } })
-        }}
+        onPress={() => irAlDia(false)}
         className="mt-2 min-h-[44px] items-center justify-center rounded-card bg-accent"
       >
         <Text className="text-body text-on-accent">Organizar día</Text>

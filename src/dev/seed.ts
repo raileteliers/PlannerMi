@@ -113,6 +113,14 @@ export function buildSeedDataset(hoy = new Date()): Dataset {
         hecha: false,
       },
       { id: newId(), titulo: 'Comprar cuaderno', hecha: false },
+
+      // A day carrying more tasks than fit in a glance. The month's day sheet
+      // has to fold these away rather than list them, so the fixture has to
+      // contain the state that makes it fold.
+      { id: newId(), titulo: 'Terminar el informe', fecha: toISODate(hoy), hecha: false },
+      { id: newId(), titulo: 'Leer el capítulo 4', fecha: toISODate(hoy), hecha: false },
+      { id: newId(), titulo: 'Responder el correo', fecha: toISODate(hoy), hecha: false },
+      { id: newId(), titulo: 'Devolver el libro', fecha: toISODate(hoy), hecha: true },
     ],
   }
 }

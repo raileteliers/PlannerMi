@@ -23,13 +23,22 @@ export interface PedidoAgendar {
  */
 export function TodayStrip({
   franja,
+  abrirPendientes = false,
   onAgendar,
 }: {
   franja: FranjaSuperior
+  /**
+   * Opens the list on arrival. Set when the day was reached from the month's
+   * "Pendientes", where the whole point of coming here was to see it — landing
+   * on the day and having to press the button again is the same trip twice.
+   */
+  abrirPendientes?: boolean
   onAgendar: (pedido: PedidoAgendar) => void
 }) {
   const data = usePlannerStore((s) => s.data)
-  const [viendoPendientes, setViendoPendientes] = useState(false)
+  // Initial state, not a controlled prop: once here, closing it has to stick,
+  // and the screen is keyed by date so a new day starts this over anyway.
+  const [viendoPendientes, setViendoPendientes] = useState(abrirPendientes)
 
   const porHacer = franja.tareas.filter((t) => !t.hecha).length
 
