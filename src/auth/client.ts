@@ -21,6 +21,15 @@ export function supabase(): SupabaseClient | null {
       storage: AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
+      // Asked for explicitly: supabase-js defaults to `implicit`, which brings
+      // the session back as `#access_token=...` in the fragment. The sign-in
+      // here reads a `?code=` and exchanges it, so under the default there was
+      // no code to find and signing in on a phone could not complete.
+      //
+      // It is also the right flow for an app rather than a page: implicit puts
+      // the tokens in a URL the OS hands around, and PKCE hands over a code
+      // that is worthless without a verifier this app never sent anywhere.
+      flowType: 'pkce',
       // There is no URL to read a session out of: the deep link is handled by
       // WebBrowser.openAuthSessionAsync, which hands the code back directly.
       detectSessionInUrl: false,
