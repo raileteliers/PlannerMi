@@ -77,10 +77,12 @@ function AppShell() {
           />
         </View>
 
-        {/* Not on Ajustes: there is nothing to add in there. */}
+        {/* Not on Ajustes: there is nothing to add in there. Not on the auth
+            callback either — that screen is on its way somewhere else. */}
         {status !== 'starting' &&
           !pathname.startsWith('/ajustes') &&
-          !pathname.startsWith('/paleta') && <CreateFab />}
+          !pathname.startsWith('/paleta') &&
+          !pathname.startsWith('/auth-callback') && <CreateFab />}
         <Toast />
       </View>
 
