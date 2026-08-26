@@ -440,3 +440,25 @@ funcionando sin internet.
   `existente?.fecha ?? fechaInicial`, así que abrir una tarea sin fecha y
   guardar le ponía una sola. No se notaba porque las sin fecha nunca llegaban a
   un formulario; la tira las hizo llegar.
+
+## Fase 13 — La semana se pliega
+
+- **Los días arrancan plegados, y varios pueden estar abiertos a la vez.** Es la
+  misma regla que Carga: la pantalla existe para comparar, así que abrir un día
+  no puede cerrar aquel contra el que lo estabas comparando. No es un acordeón.
+- **La fila plegada dice qué tiene el día.** Siete fechas desnudas obligarían a
+  abrir una por una para saber dónde hay algo, que es exactamente lo contrario
+  de tener la semana en una plana. Van los títulos de lo agendado y las tareas
+  como número: un título de tarea no es lo que estás buscando cuando barrés la
+  semana. Un día con todo hecho dice "todo hecho", que no es lo mismo que uno
+  vacío.
+- **Un día vacío no se despliega ni dibuja caret.** No tiene nada que esconder,
+  y un control que no hace nada es peor que ningún control. Misma regla que un
+  ramo con una sola evaluación en Carga.
+- **Solo en filas.** En columnas los siete días ya están lado a lado; plegar uno
+  no compraría nada.
+- **Tocar el día ya no abre la hoja: la despliega.** Lo que sí hace es fijar el
+  día del "+", que es lo que uno quiere después de mirar un día y decidir que le
+  falta algo. La hoja del día sigue a un toque, desde cualquiera de sus filas.
+- **Se puede soltar una tarea sobre un día plegado.** Es el caso que más importa
+  — "esto no lo alcancé, va para mañana" — y mañana casi siempre está plegado.

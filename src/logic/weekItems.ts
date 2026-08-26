@@ -114,3 +114,22 @@ export function rangoSemanaLabel(dias: ISODate[]): string {
 
 const fmt = (date: Date, pattern: string): string =>
   format(date, pattern, { locale: es }).replace(/\./g, '')
+
+/**
+ * The one line a folded day shows: what it holds, without opening it.
+ *
+ * Seven bare dates would mean opening each day to find out whether it has
+ * anything in it, which is the opposite of having the week on one plane. The
+ * titles first, because that is what you are scanning for, and the tasks as a
+ * count, because a task title is not what you are scanning for.
+ */
+export function resumenDelDia(dia: DiaDeSemana): string {
+  const partes = dia.items.map((i) => i.titulo)
+  const pendientes = dia.tareas.filter((t) => !t.hecha).length
+  if (pendientes > 0) partes.push(pendientes === 1 ? '1 tarea' : `${pendientes} tareas`)
+
+  // Everything done still deserves saying: a day with three closed tasks is
+  // not the same as an empty one.
+  if (partes.length === 0 && dia.tareas.length > 0) return 'todo hecho'
+  return partes.join(" \u00b7 ")
+}

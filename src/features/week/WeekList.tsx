@@ -9,7 +9,12 @@ import { DragList } from '../../components/DragList'
 import { courseColor } from '../../design/palette'
 import { RECURRING_ALPHA } from '../../design/tokens'
 import { parseISODate, type ISODate } from '../../lib/date'
-import { SIN_FECHA_VISIBLES, diaVacio, type DiaDeSemana } from '../../logic/weekItems'
+import {
+  SIN_FECHA_VISIBLES,
+  diaVacio,
+  resumenDelDia,
+  type DiaDeSemana,
+} from '../../logic/weekItems'
 import { moverADia, reordenar } from '../../logic/taskOrder'
 import { usePlannerStore } from '../../store/usePlannerStore'
 import { ZonasProvider, useZonas } from './dropZones'
@@ -116,6 +121,7 @@ export function WeekList({
   enColumnas,
   onSelectDay,
   onEditarTarea,
+  onDiaEnFoco,
 }: {
   dias: DiaDeSemana[]
   sinFecha: Tarea[]
@@ -123,7 +129,27 @@ export function WeekList({
   enColumnas: boolean
   onSelectDay: (fecha: ISODate) => void
   onEditarTarea: (tarea: Tarea) => void
+  /** The day being looked at, which is the one the global "+" fills in. */
+  onDiaEnFoco: (fecha: ISODate) => void
 }) {
+  /**
+   * Which days are open. A set and not one date: this screen exists to compare
+   * days, and opening one cannot close the one you were comparing it against —
+   * the same reason Carga is not an accordion.
+   *
+   * Keyed by date, so moving to another week starts folded again.
+   */
+  const [abiertos, setAbiertos] = useState<ReadonlySet<ISODate>>(() => new Set())
+
+  const alternar = (fecha: ISODate) => {
+    onDiaEnFoco(fecha)
+    setAbiertos((previos) => {
+      const siguiente = new Set(previos)
+      if (siguiente.has(fecha)) siguiente.delete(fecha)
+      else siguiente.add(fecha)
+      return siguiente
+    })
+  }
   // Above the seven days in both layouts: the strip belongs to the week, not
   // to any one day, and it is the pile you deal the week out of.
   const strip = <SinFechaStrip tareas={sinFecha} onEditar={onEditarTarea} />
@@ -172,6 +198,8 @@ export function WeekList({
             <DiaFila
               dia={dia}
               esHoy={dia.fecha === hoy}
+              abierto={abiertos.has(dia.fecha)}
+              onAlternar={() => alternar(dia.fecha)}
               onSelect={onSelectDay}
               onEditarTarea={onEditarTarea}
             />
@@ -269,6 +297,8 @@ function DiaFila({
   dia,
   esHoy,
   angosto = false,
+  abierto,
+  onAlternar,
   onSelect,
   onEditarTarea,
 }: {
@@ -276,10 +306,20 @@ function DiaFila({
   esHoy: boolean
   /** A column, not a row: there is no width to put an hour beside a title. */
   angosto?: boolean
+  /**
+   * Folded or not. Absent as columns, where the seven days are already side by
+   * side and folding one would buy nothing.
+   */
+  abierto?: boolean
+  onAlternar?: () => void
   onSelect: (fecha: ISODate) => void
   onEditarTarea: (tarea: Tarea) => void
 }) {
   const vacio = diaVacio(dia)
+  const plegable = onAlternar !== undefined && !vacio
+  // An empty day has nothing to fold away, so it never draws a caret and never
+  // hides anything — the same rule Carga uses for a ramo with one evaluación.
+  const mostrarContenido = !plegable || abierto === true
 
   return (
     <View className={`px-2 py-2 ${esHoy ? 'bg-surface-muted' : ''}`}>
@@ -287,9 +327,10 @@ function DiaFila({
           the only way to add something to an empty one. */}
       <Pressable
         accessibilityRole="button"
+        accessibilityState={plegable ? { expanded: abierto === true } : undefined}
         accessibilityLabel={format(parseISODate(dia.fecha), "EEEE d 'de' MMMM", { locale: es })}
-        onPress={() => onSelect(dia.fecha)}
-        className="min-h-[32px] flex-row items-baseline gap-2"
+        onPress={plegable ? onAlternar : () => onSelect(dia.fecha)}
+        className="min-h-[44px] flex-row items-center gap-2"
       >
         <Text className={`text-meta uppercase ${esHoy ? 'font-bold text-ink' : 'text-ink-secondary'}`}>
           {format(parseISODate(dia.fecha), 'EEE d', { locale: es }).replace('.', '')}
@@ -303,9 +344,24 @@ function DiaFila({
               .join(' · ')}
           </Text>
         )}
+
+        {/* Folded, the day still says what it holds. Seven bare dates would
+            mean opening each one to find out whether it has anything in it. */}
+        {plegable && !abierto && (
+          <Text numberOfLines={1} className="min-w-0 flex-1 text-meta text-ink-tertiary">
+            {resumenDelDia(dia)}
+          </Text>
+        )}
+
+        {plegable && (
+          <View className="ml-auto">
+            <Caret abierto={abierto === true} />
+          </View>
+        )}
       </Pressable>
 
-      {dia.items.map((item) => (
+      {mostrarContenido &&
+        dia.items.map((item) => (
         <Pressable
           key={item.id}
           accessibilityRole="button"
@@ -335,13 +391,15 @@ function DiaFila({
               <Text className="text-meta text-ink-tertiary">{item.hora}</Text>
             )}
           </View>
-          {!angosto && item.hora !== undefined && (
-            <Text className="shrink-0 text-meta text-ink-tertiary">{item.hora}</Text>
-          )}
-        </Pressable>
-      ))}
+            {!angosto && item.hora !== undefined && (
+              <Text className="shrink-0 text-meta text-ink-tertiary">{item.hora}</Text>
+            )}
+          </Pressable>
+        ))}
 
-      <TareasArrastrables tareas={dia.tareas} fecha={dia.fecha} onEditar={onEditarTarea} />
+      {mostrarContenido && (
+        <TareasArrastrables tareas={dia.tareas} fecha={dia.fecha} onEditar={onEditarTarea} />
+      )}
     </View>
   )
 }

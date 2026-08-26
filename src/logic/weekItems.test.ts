@@ -4,6 +4,7 @@ import {
   tareasSinFecha,
   entradasDeSemana,
   rangoSemanaLabel,
+  resumenDelDia,
   semanaDe,
   semanaVacia,
   semanaVecina,
@@ -197,5 +198,42 @@ describe('tareasSinFecha', () => {
     const data = fixture()
     data.tareas = data.tareas.filter((t) => t.fecha !== undefined)
     expect(tareasSinFecha(data)).toEqual([])
+  })
+})
+
+describe('resumenDelDia', () => {
+  const dia = (items: string[], tareas: { hecha: boolean }[] = []) => ({
+    fecha: '2026-03-11',
+    items: items.map((titulo, i) => ({
+      id: String(i),
+      fecha: '2026-03-11',
+      titulo,
+      color: 'blue' as const,
+      importancia: 'media' as const,
+      esRecurrente: false,
+      origen: 'compromiso' as const,
+    })),
+    tareas: tareas.map((t, i) => ({ id: `t${i}`, titulo: `T${i}`, hecha: t.hecha })),
+  })
+
+  it('names what is scheduled and counts what is pending', () => {
+    expect(resumenDelDia(dia(['Gimnasio', 'Control 2'], [{ hecha: false }, { hecha: false }]))).toBe(
+      'Gimnasio · Control 2 · 2 tareas',
+    )
+  })
+
+  it('says one tarea in the singular', () => {
+    expect(resumenDelDia(dia([], [{ hecha: false }]))).toBe('1 tarea')
+  })
+
+  it('leaves done tasks out of the count', () => {
+    expect(resumenDelDia(dia(['Gimnasio'], [{ hecha: true }, { hecha: false }]))).toBe(
+      'Gimnasio · 1 tarea',
+    )
+  })
+
+  it('distinguishes a finished day from an empty one', () => {
+    expect(resumenDelDia(dia([], [{ hecha: true }]))).toBe('todo hecho')
+    expect(resumenDelDia(dia([]))).toBe('')
   })
 })

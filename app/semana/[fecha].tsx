@@ -41,6 +41,9 @@ export default function WeekPage() {
   const { width } = useWindowDimensions()
   const [diaAbierto, setDiaAbierto] = useState<ISODate | null>(null)
   const [tareaAbierta, setTareaAbierta] = useState<Tarea | null>(null)
+  // The day you last opened in the list. Not the same as `diaAbierto`, which
+  // is the sheet; this one only says which day the "+" should fill in.
+  const [diaEnFoco, setDiaEnFoco] = useState<ISODate | null>(null)
   const hoy = todayISO()
 
   const fechas = useMemo(() => semanaDe(fecha), [fecha])
@@ -55,9 +58,10 @@ export default function WeekPage() {
   const setFechaContexto = useUiStore((s) => s.setFechaContexto)
   useEffect(() => {
     if (diaAbierto) return setFechaContexto(diaAbierto)
+    if (diaEnFoco && fechas.includes(diaEnFoco)) return setFechaContexto(diaEnFoco)
     const lunes = fechas[0] as ISODate
     setFechaContexto(fechas.includes(hoy) ? hoy : lunes)
-  }, [diaAbierto, fechas, hoy, setFechaContexto])
+  }, [diaAbierto, diaEnFoco, fechas, hoy, setFechaContexto])
 
   const irA = (delta: number) =>
     router.replace({
@@ -126,6 +130,7 @@ export default function WeekPage() {
           enColumnas={width >= ANCHO_COLUMNAS_PX}
           onSelectDay={setDiaAbierto}
           onEditarTarea={setTareaAbierta}
+          onDiaEnFoco={setDiaEnFoco}
         />
 
         {sinDatos && (
