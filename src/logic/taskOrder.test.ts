@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { indiceDestino, ordenadas, reordenar } from './taskOrder'
+import { indiceDestino, moverADia, ordenAlFinalDe, ordenadas, reordenar } from './taskOrder'
 import type { Tarea } from '../model/types'
 
 const t = (id: string, titulo: string, extra: Partial<Tarea> = {}): Tarea => ({
@@ -100,5 +100,29 @@ describe('indiceDestino', () => {
 
   it('refuses to divide by a row height of zero', () => {
     expect(indiceDestino(2, 100, 0, 5)).toBe(2)
+  })
+})
+
+describe('mover a otro día', () => {
+  it('lands at the end of what the target day already holds', () => {
+    const destino = [t('A', 'Alfa', { orden: 0 }), t('B', 'Beta', { orden: 3 })]
+    expect(moverADia(destino, '2026-08-27')).toEqual({ fecha: '2026-08-27', orden: 4 })
+  })
+
+  it('starts at zero on an empty day', () => {
+    expect(moverADia([], '2026-08-27')).toEqual({ fecha: '2026-08-27', orden: 0 })
+  })
+
+  it('ignores tasks the target day never placed by hand', () => {
+    const destino = [t('A', 'Alfa'), t('B', 'Beta', { orden: 1 })]
+    expect(ordenAlFinalDe(destino)).toBe(2)
+  })
+
+  it('treats a day of only unplaced tasks as empty', () => {
+    expect(ordenAlFinalDe([t('A', 'Alfa'), t('B', 'Beta')])).toBe(0)
+  })
+
+  it('carries the loose pile as a real destination, not a missing value', () => {
+    expect(moverADia([], undefined)).toEqual({ fecha: undefined, orden: 0 })
   })
 })

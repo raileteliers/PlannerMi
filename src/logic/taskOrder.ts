@@ -78,3 +78,34 @@ export function indiceDestino(
   const destino = desde + Math.round(desplazamientoPx / alturaFilaPx)
   return Math.max(0, Math.min(total - 1, destino))
 }
+
+/**
+ * Where a task lands when it is dropped on another day.
+ *
+ * At the end of what that day already holds, not at the top. The move this
+ * exists for is "I did not get to this, push it to tomorrow" — and something
+ * pushed to tomorrow is not suddenly the first thing you do tomorrow.
+ *
+ * `orden` is reassigned rather than carried over: a task dragged to the top of
+ * Monday last week would otherwise jump to the top of whatever day it lands on,
+ * which is a position nobody asked for in that day.
+ */
+export function ordenAlFinalDe(tareasDelDestino: Tarea[]): number {
+  const ordenes = tareasDelDestino.flatMap((t) => (t.orden === undefined ? [] : [t.orden]))
+  return ordenes.length === 0 ? 0 : Math.max(...ordenes) + 1
+}
+
+/**
+ * What changes when a task is dropped on a day. `fecha: undefined` is the
+ * loose pile, which is a real destination and not a missing value — dragging
+ * something out of the week is how you say "not this week, but not gone".
+ */
+export interface MovimientoDeDia {
+  fecha: string | undefined
+  orden: number
+}
+
+export const moverADia = (
+  tareasDelDestino: Tarea[],
+  fecha: string | undefined,
+): MovimientoDeDia => ({ fecha, orden: ordenAlFinalDe(tareasDelDestino) })

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Pressable, ScrollView, Text, View } from 'react-native'
@@ -10,8 +10,9 @@ import { courseColor } from '../../design/palette'
 import { RECURRING_ALPHA } from '../../design/tokens'
 import { parseISODate, type ISODate } from '../../lib/date'
 import { SIN_FECHA_VISIBLES, diaVacio, type DiaDeSemana } from '../../logic/weekItems'
-import { reordenar } from '../../logic/taskOrder'
+import { moverADia, reordenar } from '../../logic/taskOrder'
 import { usePlannerStore } from '../../store/usePlannerStore'
+import { ZonasProvider, useZonas } from './dropZones'
 import type { Tarea } from '../../model/types'
 
 /**
@@ -33,29 +34,61 @@ const ALTURA_TAREA_PX = 44
  */
 function TareasArrastrables({
   tareas,
+  fecha,
   onEditar,
 }: {
   tareas: Tarea[]
+  /** The day these belong to. `undefined` is the loose pile. */
+  fecha: ISODate | undefined
   onEditar: (tarea: Tarea) => void
 }) {
+  const data = usePlannerStore((s) => s.data)
   const reordenarTareas = usePlannerStore((s) => s.reordenarTareas)
+  const updateTarea = usePlannerStore((s) => s.updateTarea)
+  const zonas = useZonas()
+
   const pendientes = tareas.filter((t) => !t.hecha)
   const hechas = tareas.filter((t) => t.hecha)
 
+  /**
+   * A drop lands on a day, and the day it lands on decides what happened: the
+   * same one means "put it here in the list", another one means "do it then
+   * instead". One gesture, two meanings, told apart by where you let go.
+   */
+  const soltarEn = (tarea: Tarea, x: number, y: number): boolean => {
+    const zona = zonas?.zonaEn(x, y)
+    zonas?.limpiar()
+    if (!zona || zona.fecha === fecha) return false
+
+    const enDestino = data.tareas.filter((t) => t.fecha === zona.fecha && t.id !== tarea.id)
+    void updateTarea(tarea.id, moverADia(enDestino, zona.fecha))
+    return true
+  }
+
+  // One task still gets a grip: it has nowhere to go inside its own day, but
+  // moving it to another day is the whole point.
+  const arrastrables = zonas ? pendientes : pendientes.length > 1 ? pendientes : []
+
   return (
     <>
-      {pendientes.length > 1 ? (
+      {arrastrables.length > 0 ? (
         <DragList
-          items={pendientes}
+          items={arrastrables}
           alturaFila={ALTURA_TAREA_PX}
           onReordenar={(desde, hasta) =>
-            void reordenarTareas(reordenar(pendientes, desde, hasta))
+            void reordenarTareas(reordenar(arrastrables, desde, hasta))
           }
+          {...(zonas
+            ? {
+                onArrastreInicio: zonas.medir,
+                onArrastreMover: (x: number, y: number) =>
+                  zonas.setActiva(zonas.zonaEn(x, y)?.clave ?? null),
+                onSoltarEn: soltarEn,
+              }
+            : {})}
           renderItem={(tarea) => <TareaFila tarea={tarea} onEditar={onEditar} />}
         />
       ) : (
-        // A single task has nowhere to go: the grip would be a control that
-        // does nothing, which is worse than no control.
         pendientes.map((tarea) => (
           <TareaFila key={tarea.id} tarea={tarea} onEditar={onEditar} />
         ))
@@ -97,12 +130,15 @@ export function WeekList({
 
   if (enColumnas) {
     return (
+      <ZonasProvider>
       <View className="min-h-0 flex-1">
         {strip}
         <View className="min-h-0 flex-1 flex-row border-l border-t border-border-hairline">
           {dias.map((dia) => (
-            <View
+            <Zona
               key={dia.fecha}
+              clave={dia.fecha}
+              fecha={dia.fecha}
               className="min-w-0 flex-1 border-b border-r border-border-hairline"
             >
               <ScrollView showsVerticalScrollIndicator={false}>
@@ -114,29 +150,68 @@ export function WeekList({
                   onEditarTarea={onEditarTarea}
                 />
               </ScrollView>
-            </View>
+            </Zona>
           ))}
         </View>
       </View>
+      </ZonasProvider>
     )
   }
 
   return (
-    <ScrollView className="min-h-0 flex-1" showsVerticalScrollIndicator={false}>
-      {strip}
-      {dias.map((dia) => (
-        <View key={dia.fecha} className="border-b border-border-hairline">
-          <DiaFila
-            dia={dia}
-            esHoy={dia.fecha === hoy}
-            onSelect={onSelectDay}
-            onEditarTarea={onEditarTarea}
-          />
-        </View>
-      ))}
-      {/* The FAB floats over this lane, so Sunday is never under it. */}
-      <View className="h-14" />
-    </ScrollView>
+    <ZonasProvider>
+      <ScrollView className="min-h-0 flex-1" showsVerticalScrollIndicator={false}>
+        {strip}
+        {dias.map((dia) => (
+          <Zona
+            key={dia.fecha}
+            clave={dia.fecha}
+            fecha={dia.fecha}
+            className="border-b border-border-hairline"
+          >
+            <DiaFila
+              dia={dia}
+              esHoy={dia.fecha === hoy}
+              onSelect={onSelectDay}
+              onEditarTarea={onEditarTarea}
+            />
+          </Zona>
+        ))}
+        {/* The FAB floats over this lane, so Sunday is never under it. */}
+        <View className="h-14" />
+      </ScrollView>
+    </ZonasProvider>
+  )
+}
+
+/**
+ * A day, as a place a task can be dropped on.
+ *
+ * It registers its node so the week can measure where it is on screen, and
+ * lights up while a task is held over it — without that, a cross-day drag is
+ * letting go and hoping.
+ */
+function Zona({
+  clave,
+  fecha,
+  className,
+  children,
+}: {
+  clave: string
+  fecha: ISODate | undefined
+  className: string
+  children: ReactNode
+}) {
+  const zonas = useZonas()
+  const activa = zonas?.activa === clave
+
+  return (
+    <View
+      ref={(nodo) => zonas?.registrar(clave, fecha, nodo)}
+      className={`${className} ${activa ? 'bg-surface-muted' : ''}`}
+    >
+      {children}
+    </View>
   )
 }
 
@@ -166,10 +241,12 @@ function SinFechaStrip({
   const ocultas = tareas.length - visibles.length
 
   return (
-    <View className="border-b border-border-hairline px-2 py-2">
+    // A zone like the days are: dragging something out of the week and into
+    // this pile is how you say "not this week, but not gone either".
+    <Zona clave="sin-fecha" fecha={undefined} className="border-b border-border-hairline px-2 py-2">
       <Text className="text-meta uppercase text-ink-tertiary">Sin fecha</Text>
 
-      <TareasArrastrables tareas={visibles} onEditar={onEditar} />
+      <TareasArrastrables tareas={visibles} fecha={undefined} onEditar={onEditar} />
 
       {(ocultas > 0 || abierto) && (
         <Pressable
@@ -184,7 +261,7 @@ function SinFechaStrip({
           </Text>
         </Pressable>
       )}
-    </View>
+    </Zona>
   )
 }
 
@@ -264,7 +341,7 @@ function DiaFila({
         </Pressable>
       ))}
 
-      <TareasArrastrables tareas={dia.tareas} onEditar={onEditarTarea} />
+      <TareasArrastrables tareas={dia.tareas} fecha={dia.fecha} onEditar={onEditarTarea} />
     </View>
   )
 }

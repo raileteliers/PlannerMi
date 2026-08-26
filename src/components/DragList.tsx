@@ -26,11 +26,24 @@ export function DragList<T extends { id: string }>({
   items,
   alturaFila,
   onReordenar,
+  onArrastreInicio,
+  onArrastreMover,
+  onSoltarEn,
   renderItem,
 }: {
   items: T[]
   alturaFila: number
   onReordenar: (desde: number, hasta: number) => void
+  /** Called once when a row is picked up, so the surroundings can get ready. */
+  onArrastreInicio?: () => void
+  /** The finger's position in window coordinates, while it moves. */
+  onArrastreMover?: (x: number, y: number) => void
+  /**
+   * Where the row was let go, in window coordinates. Returning `true` means the
+   * drop was handled elsewhere — dropped onto another day, say — and this list
+   * should not also reorder itself.
+   */
+  onSoltarEn?: (item: T, x: number, y: number) => boolean
   renderItem: (item: T) => ReactNode
 }) {
   // Which row is in hand and where it would land. Only changes when the target
@@ -49,6 +62,9 @@ export function DragList<T extends { id: string }>({
           arrastre={arrastre}
           setArrastre={setArrastre}
           onReordenar={onReordenar}
+          {...(onArrastreInicio ? { onArrastreInicio } : {})}
+          {...(onArrastreMover ? { onArrastreMover } : {})}
+          {...(onSoltarEn ? { onSoltarEn: (x: number, y: number) => onSoltarEn(item, x, y) } : {})}
         >
           {renderItem(item)}
         </Fila>
@@ -64,6 +80,9 @@ function Fila({
   arrastre,
   setArrastre,
   onReordenar,
+  onArrastreInicio,
+  onArrastreMover,
+  onSoltarEn,
   children,
 }: {
   indice: number
@@ -72,9 +91,20 @@ function Fila({
   arrastre: { desde: number; hasta: number } | null
   setArrastre: (a: { desde: number; hasta: number } | null) => void
   onReordenar: (desde: number, hasta: number) => void
+  onArrastreInicio?: () => void
+  onArrastreMover?: (x: number, y: number) => void
+  onSoltarEn?: (x: number, y: number) => boolean
   children: ReactNode
 }) {
   const offset = useRef(new Animated.Value(0)).current
+  /**
+   * The last place the finger actually was.
+   *
+   * The release event's own `moveX`/`moveY` cannot be trusted: a pointer-up
+   * carries no movement, so they arrive stale or at zero and every drop is
+   * resolved against a position the finger left long ago.
+   */
+  const ultima = useRef({ x: 0, y: 0 })
 
   // Built once. A PanResponder rebuilt mid-gesture drops the gesture already
   // in flight, and `indice` is stable for the life of a row's key.
@@ -91,6 +121,7 @@ function Fila({
         onPanResponderGrant: () => {
           offset.setValue(0)
           setArrastre({ desde: indice, hasta: indice })
+          onArrastreInicio?.()
         },
 
         onPanResponderMove: (_e, gesto) => {
@@ -99,12 +130,19 @@ function Fila({
             desde: indice,
             hasta: indiceDestino(indice, gesto.dy, alturaFila, total),
           })
+          ultima.current = { x: gesto.moveX, y: gesto.moveY }
+          onArrastreMover?.(gesto.moveX, gesto.moveY)
         },
 
         onPanResponderRelease: (_e, gesto) => {
           const hasta = indiceDestino(indice, gesto.dy, alturaFila, total)
+          const { x, y } = ultima.current
           offset.setValue(0)
           setArrastre(null)
+
+          // Somewhere else claimed the drop — another day. Reordering here too
+          // would move the task twice for one gesture.
+          if (onSoltarEn?.(x, y)) return
           if (hasta !== indice) onReordenar(indice, hasta)
         },
 
@@ -115,7 +153,18 @@ function Fila({
           setArrastre(null)
         },
       }),
-    [indice, total, alturaFila, offset, setArrastre, onReordenar],
+    [
+      indice,
+      total,
+      alturaFila,
+      offset,
+      ultima,
+      setArrastre,
+      onReordenar,
+      onArrastreInicio,
+      onArrastreMover,
+      onSoltarEn,
+    ],
   )
 
   const enMano = arrastre?.desde === indice
