@@ -24,11 +24,13 @@ import { TareaForm } from '../create/TareaForm'
 import type { Compromiso, Evaluacion, Tarea } from '../../model/types'
 
 /**
- * How many tasks the sheet shows before it stops listing them.
+ * Past this many tasks the sheet stops listing them at all.
  *
- * Past this the sheet stops being a glance at the day and turns into a to-do
- * list with a day's worth of other things stuck on top of it. The rest live
- * behind "Pendientes", on the screen built for working through them.
+ * All of them go, not the ones over the line: a couple of tasks left showing
+ * above the button is neither the glance nor the list — you still cannot see
+ * what the day holds, and the clutter the button exists to remove is still
+ * there. Under the line they are few enough to just be shown, and then there
+ * is nothing for a button to do.
  */
 const TAREAS_VISIBLES = 2
 
@@ -59,9 +61,9 @@ export function DaySheet({ fecha, onClose }: { fecha: ISODate; onClose: () => vo
     .sort((a, b) => (a.hora ?? '99:99').localeCompare(b.hora ?? '99:99'))
 
   const tareas = tareasDelDia(data, fecha)
-  const tareasVisibles = tareas.slice(0, TAREAS_VISIBLES)
   const porHacer = tareas.filter((t) => !t.hecha).length
   const hayDeMas = tareas.length > TAREAS_VISIBLES
+  const tareasVisibles = hayDeMas ? [] : tareas
 
   // Both buttons land on the same screen; this one asks for the list to be
   // open when it gets there.
